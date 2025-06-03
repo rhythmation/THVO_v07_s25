@@ -219,6 +219,9 @@ export const StoryEditorContentEditor = (props) => {
 
   //Array of all sprite keys
   const allSprites = Object.keys(idToSprite);
+
+  const characterDropdowns = [];
+  const chapterDropdowns = [];
   
   return (
     <>
@@ -339,26 +342,19 @@ export const StoryEditorContentEditor = (props) => {
               <React.Fragment>
                 {allSprites.map((charID, spriteIdx) => {
                   // For each possible character, render a small button
-                  return (
+                  characterDropdowns.push(
                     <RectButton
-                      key={charID}
+                      key={`char-${index}-${charID}`}
                       height={height * 0.1}
                       width={width * .365}
                       x={width * 0.0945}
-                      y={
-                        // place each item below the "Character" button
-                        // e.g. rowY + spriteIdx * (some vertical spacing)
-                        (height * rowY) +
-                        (spriteIdx + 1) * (height * 0.04)
-                      }
+                      y={(height * rowY) + (spriteIdx + 1) * (height * 0.04)}
                       color={white}
                       fontSize={width * 0.012}
                       fontColor={0x000000}
                       text={charID}
                       callback={() => {
-                        // Call parent handler to update the character
                         onChangeCharacter(index, charID);
-                        // Close dropdown
                         setOpenDropdownIndex(-1);
                       }}
                     />
@@ -392,9 +388,9 @@ export const StoryEditorContentEditor = (props) => {
               <React.Fragment>
                 {chapters.map((chVal, chIdx) => {
                   // chVal is numberic, e.g. 1, 2, 3
-                  return (
+                  chapterDropdowns.push(
                     <RectButton
-                      key={chVal}
+                      key={`chapter-${index}-${chVal}`}
                       height={height * 0.1}
                       width={width * 0.1}
                       x={width * 0.05}
@@ -465,6 +461,8 @@ export const StoryEditorContentEditor = (props) => {
           </React.Fragment>
         );
       })}
+      {characterDropdowns}
+      {chapterDropdowns}
     </>
   );
 };
