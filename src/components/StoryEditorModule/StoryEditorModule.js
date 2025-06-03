@@ -94,7 +94,7 @@ const StoryEditorModule = (props) => {
   const [dialogues, setDialogues] = useState([]);
 
   //Stores Chapters
-  const [chapters, setChapters] = useState(["chapter-1"]);
+  const [chapters, setChapters] = useState(["1"]);
 
   useEffect(() => {
     const gameId = gameUUID ?? Curriculum.getCurrentUUID();
@@ -107,13 +107,9 @@ const StoryEditorModule = (props) => {
         // Ensure all dialogues have properly formatted chapters
         const updatedDialogues = loaded.map(dialogue => {
           if (!dialogue.hasOwnProperty('chapter')) {
-            return { ...dialogue, chapter: "chapter-1" }; // Default to chapter-1
+            return { ...dialogue, chapter: "1" }; // Default to chapter-1
           }
-          // If chapter exists but isn't formatted correctly, format it
-          else if (typeof dialogue.chapter === 'number' || 
-                  !dialogue.chapter.startsWith('chapter-')) {
-            return { ...dialogue, chapter: `chapter-${dialogue.chapter}` };
-          }
+
           return dialogue;
         });
         
@@ -139,7 +135,7 @@ const StoryEditorModule = (props) => {
   const handleAddChapter = () => {
     const newChapterNumber = chapters.length + 1;
     // Format as "chapter-X"
-    setChapters([...chapters, `chapter-${newChapterNumber}`]);
+    setChapters([...chapters, `${newChapterNumber}`]);
   };
 
   //Add a new dialogue
@@ -147,7 +143,7 @@ const StoryEditorModule = (props) => {
     const newText = prompt("Enter dialogue text:");
     if (newText && newText.trim() !== "") {
       // Default to the latest chapter (or first if none exist)
-      const defaultChapter = chapters.length > 0 ? chapters[chapters.length - 1] : "chapter-1";
+      const defaultChapter = chapters.length > 0 ? chapters[chapters.length - 1] : "1";
       
       const newDialogue = {
         text: newText,
