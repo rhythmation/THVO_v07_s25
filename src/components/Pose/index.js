@@ -8,12 +8,12 @@ import {
 import { blue, yellow, pink } from "../../utils/colors";
 import { LANDMARK_GROUPINGS } from "./landmark_utilities";
 import { landmarkToCoordinates, objMap } from "./pose_drawing_utilities";
-import { scale } from "chroma-js";
+import chroma from "chroma-js";
 
-const matchedFill = scale([yellow.toString(16), pink.toString(16)]).domain([
+const matchedFill = chroma.scale([yellow.toString(16), pink.toString(16)]).domain([
   0, 100,
 ]);
-const matchedStroke = scale([blue.toString(16), pink.toString(16)]).domain([
+const matchedStroke = chroma.scale([blue.toString(16), pink.toString(16)]).domain([
   0, 100,
 ]);
 
