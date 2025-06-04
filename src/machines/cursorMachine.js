@@ -2,48 +2,49 @@ import { createMachine, assign } from "xstate";
 
 const CursorMachine = createMachine(
   {
-    id: "cursor",
     initial: "idle",
     context: {
       callback: () => {
-        console.log("Default callback triggered.");
       },
       hovering: false,
       canTransition: true,
       placementCounter: 0,
     },
     states: {
+      activated: {
+        after: {
+          3500: {
+            target: "idle",
+            cond: (context) => context.canTransition,
+          },
+          4000: {
+            target: "idle",
+            actions: [
+              assign({
+                hovering: (context) => !context.hovering,
+                canTransition: (context) => !context.canTransition,
+              }),
+            ],
+          },
+        },
+      },
       idle: {
+        exit: assign({
+          canTransition: (context) => !context.canTransition,
+        }),
         on: {
           TRIGGER: {
             target: "activated",
             cond: (context) => context.canTransition,
             actions: [
-              // Immediately disable further triggers for a short moment
               assign({
                 hovering: (context) => !context.hovering,
                 placementCounter: (context) => context.placementCounter + 1,
-                canTransition: () => false,
               }),
               (context) => {
-                if (typeof context.callback === "function") {
-                  context.callback();
-                } else {
-                  console.warn("callback is not a function", context.callback);
-                }
+                context.callback();
               },
             ],
-          },
-        },
-      },
-      activated: {
-        // Quickly reset to idle and allow new triggers
-        after: {
-          100: {
-            target: "idle",
-            actions: assign({
-              canTransition: () => true,
-            }),
           },
         },
       },
@@ -53,6 +54,12 @@ const CursorMachine = createMachine(
     actions: {
       toggleHovering: assign({
         hovering: (context) => !context.hovering,
+      }),
+      triggerCallback: (context) => {
+        context.callback();
+      },
+      toggleCanTransition: assign({
+        canTransition: (context) => !context.canTransition,
       }),
     },
   }

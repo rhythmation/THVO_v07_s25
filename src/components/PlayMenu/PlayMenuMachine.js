@@ -13,7 +13,6 @@ export const PlayMenuMachine = createMachine({
         SETTINGS: "settings", // move to settings
         ADMIN: "admin", // move to admin
         NEWGAME: "newGame", //move to new game
-        STORYEDITOR: "storyEditor", //move to story editor
         LEVELSELECT: "levelSelect", //move to edit level
         GAMESELECT: "gameSelect"
       },
@@ -63,15 +62,8 @@ export const PlayMenuMachine = createMachine({
         MAIN: "main", // move to home
         LEVELSELECT: "levelSelect", // move to conjecture selector
         NEWLEVEL: "newLevel", // preview a level in the game editor
-        STORYEDITOR: "storyEditor", // move to story editor
       },
     },
-    storyEditor : {
-      on: {
-        MAIN: "main", //move to home
-      }
-    },
-
     levelSelect: {
       on: {
         NEWLEVEL: "newLevel", // move to new level
