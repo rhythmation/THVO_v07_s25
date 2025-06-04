@@ -8,6 +8,7 @@ import ConjectureModule , {getEditLevel, setEditLevel, getGoBackFromLevelEdit, s
 import CurricularModule from "../CurricularModule/CurricularModule.js";
 import ConjectureSelectorModule, { getAddToCurricular, setAddtoCurricular } from "../ConjectureSelector/ConjectureSelectorModule.js";
 import CurricularSelectorModule, { getPlayGame, setPlayGame } from "../CurricularSelector/CurricularSelector.js";
+import StoryEditorModule from "../StoryEditorModule/StoryEditorModule.js"; 
 import { getUserRoleFromDatabase } from "../../firebase/userDatabase";
 import firebase from "firebase/compat";
 import { Curriculum } from "../CurricularModule/CurricularModule.js";
@@ -116,9 +117,9 @@ const PlayMenu = (props) => {
                 callback={button.callback}
             />
         ))}
-                {state.value === "main" && ( // if the state is main, show the data button and the data menu
+        {state.value === "main" && ( // if the state is main, show the data button and the data menu
           <>
-            <Button
+          <Button
             height={height * 0.01}
             width={width * 0.05}
             x={width - (width * 0.05)}
@@ -131,12 +132,13 @@ const PlayMenu = (props) => {
             callback={() => setdataMenuVisable(!isDataMenuVisable)}
           />
           <DataMenu 
-          trigger={isDataMenuVisable} 
-          menuWidth={width * 0.4}
-          menuHeight={height * 0.5}
-          x={width * 0.5 - (width * 0.4 * 0.5)}
-          y={height * 0.5 - (height * 0.5 * 0.5)}
-        />
+            trigger={isDataMenuVisable} 
+            menuWidth={width * 0.4}
+            menuHeight={height * 0.5}
+            x={width * 0.5 - (width * 0.4 * 0.5)}
+            y={height * 0.5 - (height * 0.5 * 0.5)}
+            onClose={() => setdataMenuVisable(false)}
+          />
         </>
         )}
         {state.value === "test" && ( //if the state is test, show the test module
@@ -212,6 +214,20 @@ const PlayMenu = (props) => {
             mainCallback={() => send("MAIN")} // goes to Home
             conjectureSelectCallback={() => send("LEVELSELECT")}
             conjectureCallback={() => send("NEWLEVEL")}  // preview a level in the game editor
+            storyEditorCallback={() => {
+
+              console.log("Sending STORYEDITOR...");
+              send("STORYEDITOR")}
+            }
+          />
+        )}
+        {state.value === "storyEditor" && (
+          console.log("Entered storyEditor state"),
+          <StoryEditorModule
+            width={width}
+            height={height}
+            mainCallback={() => send("MAIN")}
+            gameUUID={Curriculum.getCurrentUUID()}
           />
         )}
         {state.value === "levelSelect" && (

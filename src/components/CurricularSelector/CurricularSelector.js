@@ -39,10 +39,12 @@ export function handlePIN(curricular, message = "Please Enter the PIN."){ // thi
 function handleGameClicked(curricular, curricularCallback){
   if(playGame){ // don't need a PIN to play the game
     // write in a new session of the game to firebase
+    Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
     curricularCallback();
   }
   else if(handlePIN(curricular) && !playGame){
+    console.log("Attempting to edit game");
     Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
     curricularCallback();
