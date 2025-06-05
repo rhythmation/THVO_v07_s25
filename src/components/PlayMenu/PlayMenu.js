@@ -187,7 +187,13 @@ const PlayMenu = (props) => {
         )}
         {state.value === "settings" && (
             <Settings
-        />)}
+                width={width/1.2}
+                height={height/1.2}
+                x = {width * 0.1}
+                y = {height * 0.1}
+                onClose={() => send("MAIN")}
+            />
+        )}
         {state.value === "admin" && (
             <UserManagementModule
             width={width}
