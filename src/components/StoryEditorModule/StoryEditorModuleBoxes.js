@@ -432,7 +432,7 @@ export const StoryEditorContentEditor = (props) => {
             fontColor={white}
             text={"Edit"}
             fontWeight={800}
-            callback={null}
+            callback={() => onEditDialogue(index)}
           />
           <RectButton
               height={height * 0.1}
