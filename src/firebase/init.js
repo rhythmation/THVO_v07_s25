@@ -2,6 +2,7 @@
 import firebase from "firebase/compat/app";
 
 import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { getStorage } from "firebase/storage";
 
 // Firebase config
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Set session persistence
 setPersistence(auth, browserSessionPersistence)
@@ -31,5 +33,5 @@ setPersistence(auth, browserSessionPersistence)
     console.error('Error setting session persistence:', error);
   });
 
-export { app, auth };
+export { app, auth, storage };
 

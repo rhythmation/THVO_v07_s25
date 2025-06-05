@@ -111,6 +111,17 @@ export const writeToDatabase = async (poseData, UUID, frameRate) => {
   return promise;
 };
 
+export const loadGameDialoguesFromFirebase = async (gameId) => {
+  if (!gameId) {
+    alert("No gameId provided!");
+    return [];
+  }
+  const dbRef = ref(db, `Game/${gameId}/Dialogues`);
+  const snapshot = await get(dbRef);
+  return snapshot.exists() ? snapshot.val() : [];
+};
+
+
 export const writeToDatabasePoseAuth = async (poseData, state, tolerance) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
@@ -475,6 +486,15 @@ export const writeToDatabaseCurricular = async (UUID) => {
     CurricularID = UUID;
   }
 
+  // First, load any existing dialogues to preserve them
+  let existingDialogues = [];
+  try {
+    existingDialogues = await loadGameDialoguesFromFirebase(CurricularID) || [];
+    console.log("Preserving existing dialogues:", existingDialogues.length);
+  } catch (error) {
+    console.warn("No existing dialogues found or error loading dialogues:", error);
+  }
+
   //get the UUID of each conjecture
   const conjectureList = Curriculum.getCurrentConjectures();
   let conjectures = [];
@@ -484,7 +504,7 @@ export const writeToDatabaseCurricular = async (UUID) => {
 
   const dataToPush = {}
   let hasUndefined = false;
-  // Fetch values from local storage for each key inside  curricularTextBoxes
+  // Fetch values from local storage for each key inside curricularTextBoxes
   await Promise.all(curricularTextBoxes.map(async (key) => {
     const value = localStorage.getItem(key);
     Object.assign(dataToPush, await createTextObjects(key, value));
@@ -515,13 +535,34 @@ export const writeToDatabaseCurricular = async (UUID) => {
     set(ref(db, `${CurricularPath}/Time`), timestamp),
     set(ref(db, `${CurricularPath}/UUID`), CurricularID),
     set(ref(db, `${CurricularPath}/isFinal`), true),
-    // auto set author for security
     set(ref(db, `${CurricularPath}/Author`), userName),
     set(ref(db, `${CurricularPath}/AuthorID`), userId),
+    // CRITICAL: Preserve dialogues when publishing
+    set(ref(db, `${CurricularPath}/Dialogues`), existingDialogues),
   ];
 
   return alert("Game Published"), promises; //returns the promises and alerts that the game has been published
 }
+
+// save dialogues to firebase
+export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
+  const timestamp = new Date().toISOString();
+  const gameId = UUID ?? uuidv4(); // Use provided UUID or create new one
+  const dbRef = ref(db, `Game/${gameId}/Dialogues`);
+
+  const promises = [
+    set(ref(db, `Game/${gameId}/Dialogues`), dialogues),
+    set(ref(db, `Game/${gameId}/LastSaved`), timestamp),
+    set(ref(db, `Game/${gameId}/UUID`), gameId),
+    set(ref(db, `Game/${gameId}/isFinal`), false),
+    // Optional: auto-set author again for traceability
+    set(ref(db, `Game/${gameId}/AuthorID`), userId),
+    set(ref(db, `Game/${gameId}/Author`), userName),
+  ];
+
+  await Promise.all(promises);
+  alert("Narrative draft saved.");
+};
 
 
 // Define a function to retrieve a conjecture based on UUID
@@ -1064,7 +1105,90 @@ export const getAuthorizedGameList = async () => {
   }
 };
 
+// Get game name using game UUID
+export const getGameNameByUUID = async (gameID) => {
+  try {
+    // if (!gameID) return 'UnknownGame';
+    
+    const gameData = await getCurricularDataByUUID(gameID);
+    console.log('Game data', gameData);
+    if (gameData && Object.keys(gameData).length > 0) {
+      const gameKey = Object.keys(gameData)[0];
+      console.log('Game name:', gameData[gameKey].CurricularName);
+      return gameData[gameKey].CurricularName || 'UnknownGame';
+    }
+    return 'UnknownGame';
+  } catch (error) {
+    console.error('Error getting game name:', error);
+    return 'GameNameNotFound';
+  }
+};
 
+// Get level name using level UUID
+export const getLevelNameByUUID = async (levelUUID) => {
+  try {
+    if (!levelUUID) return 'UnknownLevel';
+    
+    const levelData = await getConjectureDataByUUID(levelUUID);
+    if (levelData && Object.keys(levelData).length > 0) {
+      const levelKey = Object.keys(levelData)[0];
+      // First try to get the level Name field
+      if (levelData[levelKey].Name) {
+        console.log('Level name: ', levelData[levelKey].Name);
+        return levelData[levelKey].Name;
+      }
+      // Otherwise try the CurricularName or conjecture name
+      if (levelData[levelKey]['Text Boxes'] && 
+          levelData[levelKey]['Text Boxes']['Conjecture Name']) {
+        return levelData[levelKey]['Text Boxes']['Conjecture Name'];
+      }
+      return 'UnknownLevel';
+    }
+    return 'UnknownLevel';
+  } catch (error) {
+    console.error('Error getting level name:', error);
+    return 'UnknownLevel';
+  }
+};
+
+// Find game that contains a specific level UUID
+export const findGameByLevelUUID = async (levelUUID) => {
+  try {
+    if (!levelUUID) return null;
+    
+    const gamesRef = ref(db, 'Game');
+    const gamesSnapshot = await get(gamesRef);
+    
+    if (!gamesSnapshot.exists()) return null;
+    
+    const games = gamesSnapshot.val();
+    
+    for (const gameKey in games) {
+      const game = games[gameKey];
+      if (game.ConjectureUUIDs && Array.isArray(game.ConjectureUUIDs) && 
+          game.ConjectureUUIDs.includes(levelUUID)) {
+        // console.log('Game found:', game.CurricularName);
+        return game;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error finding game by level UUID:', error);
+    return null;
+  }
+};
+
+// Get game name from level UUID by finding the game that contains this level
+export const getGameNameByLevelUUID = async (levelUUID) => {
+  try {
+    const game = await findGameByLevelUUID(levelUUID);
+    return game?.CurricularName || 'UnknownGame';
+  } catch (error) {
+    console.error('Error getting game name by level UUID:', error);
+    return 'UnknownGame';
+  }
+};
 
 
 // Not Database function but attached to data menu search
@@ -1090,3 +1214,4 @@ export const convertDateFormat = (dateStr) => {
     // Return the date string in the format 'yyyy-dd-mm'
     return `${year}-${month}-${day}`;
 };
+

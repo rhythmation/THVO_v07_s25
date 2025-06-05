@@ -33,6 +33,8 @@
     "tailwindcss": "^2.2.16"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@inlet/react-pixi": "^6.6.5",
     "@mediapipe/camera_utils": "^0.3.1632432234",
     "@mediapipe/holistic": "^0.4.1632785079",
@@ -42,7 +44,7 @@
     "better-docs": "^2.3.2",
     "chroma-js": "^2.1.2",
     "csv-writer": "^1.6.0",
-    "firebase": "^9.17.1",
+    "firebase": "^9.23.0",
     "firebase-admin": "^11.11.1",
     "ml5": "^0.7.1",
     "pixi.js": "^6.1.3",

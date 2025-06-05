@@ -30,7 +30,8 @@ const Game = (props) => {
   const { columnDimensions, rowDimensions, poseData, height, width } = props;
   const [chapterConjecture, setChapterConjecture] = useState([]);
 
-  const [performTutorial, setPerformTutorial] = useState(true);
+  const [renderDialogue, setRenderDialogue] = useState(true);
+  const [performTutorial, setPerformTutorial] = useState(false);
   // const [performTutorial, setPerformTutorial] = useState(false);
   const [allConjectures, setAllConjectures] = useState([]);
   const [state, send, service] = useMachine(GameMachine, context);
@@ -68,7 +69,22 @@ const Game = (props) => {
 
   return (
     <Container>
-      {performTutorial && (
+      {renderDialogue && (
+        <Chapter
+          poseData={poseData}
+          columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
+          height={height}
+          width={width}
+          chapterConjecture={chapterConjecture}
+          currentConjectureIdx={currentConjectureIdx}
+          nextChapterCallback={() => {
+            setRenderDialogue(false); // hide this scene after it's done
+            send("NEXT"); // continue the game
+          }}
+        />
+      )}
+      {!renderDialogue && performTutorial && (
         <Tutorial
           poseData={poseData}
           columnDimensions={columnDimensions}
@@ -79,7 +95,7 @@ const Game = (props) => {
           }}
         />
       )}
-      {!performTutorial && state.value === "chapter" && (
+      {!renderDialogue && !performTutorial && state.value === "chapter" && (
         <Chapter
           poseData={poseData}
           columnDimensions={props.columnDimensions}
@@ -91,7 +107,7 @@ const Game = (props) => {
           nextChapterCallback={() => send("NEXT")}
         />
       )}
-      {!performTutorial && state.value === "intervention" && (
+      {!renderDialogue && !performTutorial && state.value === "intervention" && (
         <Intervention triggerNextChapter={() => send("NEXT")} />
       )}
     </Container>

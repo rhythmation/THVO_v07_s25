@@ -2,7 +2,7 @@
 import Background from "../Background";
 import { Text } from "@inlet/react-pixi";
 import { TextStyle } from "@pixi/text";
-import { green, neonGreen, black, blue, white, pink, orange, red, transparent, turquoise } from "../../utils/colors";
+import { green, neonGreen, black, blue, white, pink, orange, red, transparent, turquoise, purple, navyBlue, royalBlue, dodgerBlue, powderBlue, midnightBlue, steelBlue, cornflowerBlue } from "../../utils/colors";
 import Button from "../Button";
 import RectButton from "../RectButton";
 import { getConjectureDataByUUID } from "../../firebase/database";
@@ -74,12 +74,12 @@ const UserManagementModule = (props) => {
         {/* Refresh Button */}
         <RectButton
             height={height * 0.13}
-            width={width * 0.26}
+            width={width * 0.4}
             x={width * 0.4}
             y={height * 0.93}
-            color={["green"]} 
+            color={navyBlue} 
             fontSize={width * 0.015}
-            fontColor={["white"]} 
+            fontColor={white} 
             text={loading ? "Refreshing..." : "Refresh Users"}
             fontWeight={800}
             callback={refreshUserList}
@@ -102,10 +102,10 @@ const UserManagementModule = (props) => {
             width={width * 0.26}
             x={width * 0.15}
             y={height * 0.93}
-            color={black}
+            color={red}
             fontSize={width * 0.015}
             fontColor={white}
-            text={"Back Button"}
+            text={"Back"}
             fontWeight={800}
             callback={mainCallback}
         />

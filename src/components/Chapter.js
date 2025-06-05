@@ -5,10 +5,12 @@ import TextBox from "./TextBox.js";
 import Pose from "./Pose/index.js";
 import { useEffect, useState } from "react";
 import { useMachine, useSelector, assign } from "@xstate/react";
-import ChapterMachine from "../machines/chapterMachine.js";
+import chapterMachine from "../machines/chapterMachine.js";
 import { Sprite } from "@inlet/react-pixi";
 import Experiment from "./Experiment.js";
 import script from "../scripts/chapters.toml";
+import { Curriculum } from "./CurricularModule/CurricularModule";
+import { loadGameDialoguesFromFirebase } from "../firebase/database.js";
 
 const characterRenderOrder = {
   aboveground: 1,
@@ -42,7 +44,7 @@ const colorMap = {
   green: green,
 };
 
-const idToSprite = {
+export const idToSprite = {
   // "circle": "../assets/circle.png",
   player: new URL("../assets/player_sprite.png", import.meta.url).href,
   equilateralTriangle: new URL(
@@ -60,6 +62,7 @@ const idToSprite = {
 };
 
 const createScene = (sceneConfig, columnDimensions, rowDimensions) => {
+  console.log("sceneConfig received in createScene:", sceneConfig);
   return sceneConfig
     .sort((a, b) => {
       return (
@@ -73,6 +76,7 @@ const createScene = (sceneConfig, columnDimensions, rowDimensions) => {
       placementText += characterConfig.placement
         ? ` ${characterConfig.placement}`
         : " left";
+      console.log("character config", characterConfig);
       return (
         <Character
           type={characterConfig.id}
@@ -105,66 +109,202 @@ const Chapter = (props) => {
     chapterConjecture,
     nextChapterCallback,
     currentConjectureIdx,
+    isOutro,
   } = props;
-  let context;
-  if (script[`chapter-${currentConjectureIdx + 1}`]) {
-    const { intro, outro, scene } =
-      script[`chapter-${currentConjectureIdx + 1}`];
-    context = {
-      introText: intro ? intro : "",
-      outroText: outro ? outro : "",
-      scene: scene ? scene : "",
-      currentText: null,
-      lastText: [],
-      cursorMode: true,
-    };
-  }
+
   const [characters, setCharacters] = useState(undefined);
   const [displayText, setDisplayText] = useState(null);
   const [speaker, setSpeaker] = useState(null);
   const [currentConjecture, setCurrentConjecture] = useState(chapterConjecture);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [state, send, service] = useMachine(ChapterMachine, { context });
+  const [hasCompleted, setHasCompleted] = useState(false);
+
+  const handleAdvance = () => {
+    send("NEXT");
+  };
+
+  const [dialogueData, setDialogueData] = useState({ intro: [], outro: [], scene: [] });
+  const [hasRun, setHasRun] = useState(false);
+  const [previousChapter, setPreviousChapter] = useState(null);
+
+  // Initialize context
+  const context = {
+    introText: dialogueData.intro || [],
+    outroText: dialogueData.outro || [],
+    scene: dialogueData.scene || [],
+    currentText: props.isOutro
+      ? (dialogueData.outro && dialogueData.outro[0]) || null
+      : (dialogueData.intro && dialogueData.intro[0]) || null,
+    lastText: [],
+    cursorMode: true,
+    onIntroComplete: () => {
+      if (!hasRun) {
+        setHasRun(true);
+        // Clear dialogues immediately before GameMachine updates
+        setDialogueData({ intro: [], outro: [], scene: [] });
+        nextChapterCallback();
+      }
+    },
+    onOutroComplete: () => {
+      if (!hasRun) {
+        setHasRun(true);
+        // Clear dialogues immediately before GameMachine updates
+        setDialogueData({ intro: [], outro: [], scene: [] });
+        nextChapterCallback();
+      }
+    },
+  };
+
+  // Reset state when chapter changes
+  useEffect(() => {
+    if (previousChapter !== currentConjectureIdx) {
+      console.log('=== CHAPTER CHANGE ===');
+      console.log('Previous:', previousChapter);
+      console.log('Current:', currentConjectureIdx);
+      console.log('isOutro:', isOutro);
+      console.log('Current dialogueData:', dialogueData);
+      setHasRun(false);
+      // Clear any existing dialogues
+      setDialogueData({ intro: [], outro: [], scene: [] });
+      // Reset state machine
+      send({
+        type: "RESET_CONTEXT",
+        introText: [],
+        outroText: [],
+        scene: [],
+        currentText: null,
+        lastText: [],
+        cursorMode: true,
+        isOutro: isOutro,
+      });
+      setPreviousChapter(currentConjectureIdx);
+    }
+  }, [currentConjectureIdx, isOutro]);
+
+  const [state, send, service] = useMachine(chapterMachine, {
+    context,
+    initialState: isOutro ? "outro" : "intro",
+  }, (state) => {
+    if (state.matches("done") && !hasRun) {
+      setHasRun(true);
+    }
+  });
+
   const currentText = useSelector(service, selectCurrentText);
   const cursorMode = useSelector(service, selectCursorMode);
 
+  // Load dialogues from Firebase - but only if we haven't loaded them yet
   useEffect(() => {
-    setCharacters(
-      createScene(state.context.scene, columnDimensions(1), rowDimensions(1))
-    );
-  }, []);
+    if (previousChapter === currentConjectureIdx && !hasRun) {
+      const loadDialogues = async () => {
+        console.log('=== LOADING DIALOGUES ===');
+        console.log('Chapter:', currentConjectureIdx + 1);
+        console.log('isOutro:', isOutro);
+        console.log('hasRun:', hasRun);
+        setIsLoading(true);
+        const gameId = Curriculum.getCurrentUUID();
+        
+        if (!gameId) {
+          console.warn("No valid game ID found. Cannot load dialogues.");
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const rawDialogues = await loadGameDialoguesFromFirebase(gameId);
+          const allDialogues = Object.values(rawDialogues || {});
+          
+          if (allDialogues && allDialogues.length > 0) {
+            const currentChapterName = `chapter-${currentConjectureIdx + 1}`;
+            console.log('=== FILTERING DIALOGUES ===');
+            console.log('Looking for chapter:', currentChapterName);
+            
+            const chapterDialogues = allDialogues.filter(
+              dialogue => dialogue.chapter === currentChapterName
+            );
+            console.log('Found dialogues:', chapterDialogues);
+
+            const intros = chapterDialogues
+              .filter(dialogue => dialogue.type === "Intro")
+              .map(dialogue => ({ 
+                text: dialogue.text, 
+                speaker: dialogue.character || "player"
+              }));
+            console.log('Filtered intros:', intros);
+              
+            const outros = chapterDialogues
+              .filter(dialogue => dialogue.type === "Outro")
+              .map(dialogue => ({
+                text: dialogue.text, 
+                speaker: dialogue.character || "player"
+              }));
+            console.log('Filtered outros:', outros);
+
+            const scene = [];
+            if (script[currentChapterName] && script[currentChapterName].scene) {
+              scene.push(...script[currentChapterName].scene);
+            }
+
+            console.log('=== UPDATING STATE ===');
+            console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
+            setDialogueData({
+              intro: intros,
+              outro: outros,
+              scene: scene
+            });
+
+            console.log('Sending RESET_CONTEXT to state machine');
+            send({
+              type: "RESET_CONTEXT",
+              introText: intros,
+              outroText: outros,
+              scene: scene,
+              currentText: isOutro ? outros[0] : intros[0],
+              lastText: [],
+              cursorMode: true,
+              isOutro: isOutro,
+            });
+          }
+        } catch (error) {
+          console.error("Error loading dialogues:", error);
+        } finally {
+          setIsLoading(false);
+          console.log('=== LOADING COMPLETE ===');
+        }
+      };
+
+      loadDialogues();
+    }
+  }, [currentConjectureIdx, isOutro, previousChapter, hasRun]);
+
+  // Add effect to monitor state changes
+  useEffect(() => {
+    console.log('=== STATE UPDATE ===');
+    console.log('Current state:', state.value);
+    console.log('Current text:', state.context.currentText);
+    console.log('isOutro:', isOutro);
+    console.log('hasRun:', hasRun);
+  }, [state, isOutro, hasRun]);
+
+  useEffect(() => {
+    if (dialogueData.scene && !isLoading) {
+      console.log("Loading...");
+      setCharacters(
+        createScene(state.context.scene, columnDimensions(1), rowDimensions(1)),
+      );
+    }
+  }, [dialogueData, isLoading]);
+
   useEffect(() => {
     setCurrentConjecture(chapterConjecture);
   }, [chapterConjecture]);
-
-  useEffect(() => {
-    let [intro, outro, scene] = [[], [], []];
-    if (script[`chapter-${currentConjectureIdx + 1}`]) {
-      intro = script[`chapter-${currentConjectureIdx + 1}`].intro
-        ? script[`chapter-${currentConjectureIdx + 1}`].intro
-        : [];
-      outro = script[`chapter-${currentConjectureIdx + 1}`].outro
-        ? script[`chapter-${currentConjectureIdx + 1}`].outro
-        : [];
-      scene = script[`chapter-${currentConjectureIdx + 1}`].outro
-        ? script[`chapter-${currentConjectureIdx + 1}`].outro
-        : [];
-    }
-    send({
-      type: "RESET_CONTEXT",
-      introText: intro,
-      outroText: outro,
-      scene: scene,
-      currentText: null,
-      lastText: [],
-      cursorMode: true,
-    });
-  }, [currentConjectureIdx]);
 
   // Effect to update the current text being displayed
   useEffect(() => {
     const subscription = service.subscribe((state) => {
       if (state.context.currentText) {
+        // console.log("THERE CURRENTLY IS TEXT YES IT EXISTS!");
         setDisplayText(state.context.currentText.text);
       }
     });
@@ -174,6 +314,9 @@ const Chapter = (props) => {
 
   useEffect(() => {
     if (characters && currentText) {
+      // console.log("There are characters and current text is set.");
+      // console.log("Characters", characters);
+      // console.log("Current Text", currentText);
       setSpeaker(
         <Sprite
           image={idToSprite[currentText.speaker]}
@@ -185,51 +328,40 @@ const Chapter = (props) => {
     }
   }, [characters, currentText]);
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <>
+        <Background height={height} width={width} />
+        <TextBox
+          text="Loading chapter data..."
+          rowDimensionsCallback={rowDimensions}
+        />
+      </>
+    );
+  }
+
+  // Rest of the component remains the same
   return (
     <>
       <Background height={height} width={width} />
       {characters}
-      {["intro", "outro", "loadingNextChapter"].includes(state.value) && (
+      <TextBox
+        text={displayText}
+        rowDimensionsCallback={rowDimensions}
+        speaker={speaker}
+        onCompleteCallback={handleAdvance}
+        onClickCallback={handleAdvance}
+        isLoading={isLoading}
+      />
+      {(state.value === "intro" || state.value.intro || state.value === "outro" || state.value.outro || state.value === "loadingNextChapter") && (
         <Pose poseData={poseData} colAttr={columnDimensions(3)} />
       )}
-      {["intro", "outro", "loadingNextChapter"].includes(state.value) &&
-        displayText && (
-          <TextBox
-            text={displayText}
-            rowDimensionsCallback={rowDimensions}
-            speaker={speaker}
-          />
-        )}
-      {cursorMode &&
-        !["experiment", "final", "loadingNextChapter"].includes(
-          state.value
-        ) && (
-          <CursorMode
-            poseData={poseData}
-            rowDimensions={rowDimensions}
-            callback={() => {
-              send("NEXT");
-            }}
-          />
-        )}
-      {cursorMode && state.value === "loadingNextChapter" && (
-        <CursorMode
-          poseData={poseData}
-          rowDimensions={rowDimensions}
-          callback={nextChapterCallback}
-        />
-      )}
-      {state.value === "experiment" && currentConjecture && (
-        <Experiment
-          columnDimensions={columnDimensions}
-          poseData={poseData}
-          rowDimensions={rowDimensions}
-          onComplete={() => {
-            send("ADVANCE");
-          }}
-          debugMode={false}
-          conjectureData={currentConjecture}
-          currentConjectureIdx={currentConjectureIdx}
+      {cursorMode && (
+        <CursorMode 
+          rowDimensions={rowDimensions} 
+          poseData={poseData} 
+          callback={handleAdvance}
         />
       )}
     </>

@@ -1,17 +1,17 @@
 // AKA Game module
 import React, {useState} from 'react';
 import Background from "../Background";
-import { blue, white, red, green, indigo, hotPink, purple } from "../../utils/colors";
+import { blue, white, red, green, indigo, hotPink, purple,} from "../../utils/colors";
 import Button from "../Button"
 import RectButton from "../RectButton";
 import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID } from "../../firebase/database";
-import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
 import { useMachine } from "@xstate/react";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
+import { StoryEditorContentEditor } from "./StoryEditorModuleBoxes";
 import Settings from '../Settings'; // Import the Settings component
-
-//Import uuid library
-const { v4: uuidv4 } = require("uuid");
+import { idToSprite } from "../Chapter"; //Import list of sprites
+import { saveGameDialoguesToFirebase, loadGameDialoguesFromFirebase } from "../../firebase/database";
+import { useEffect } from "react";import { saveNarrativeDraftToFirebase } from "../../firebase/database";
 
 // stores a list of conjectures
 export const Curriculum = {
@@ -86,9 +86,143 @@ export const Curriculum = {
   },
 };
 
-const CurricularModule = (props) => {
-  const { height, width, mainCallback, conjectureSelectCallback, conjectureCallback, storyEditorCallback } = props;
+const StoryEditorModule = (props) => {
+  const { height, width, mainCallback, gameUUID, conjectureSelectCallback, conjectureCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+
+  // Stores dialogues
+  const [dialogues, setDialogues] = useState([]);
+
+  //Stores Chapters
+  const [chapters, setChapters] = useState(["1"]);
+
+  useEffect(() => {
+    const gameId = gameUUID ?? Curriculum.getCurrentUUID();
+    if (!gameId) {
+      console.warn("No real gameId—skipping dialogues load.");
+      return;
+    }
+    loadGameDialoguesFromFirebase(gameId).then((loaded) => {
+      if (loaded) {
+        // Ensure all dialogues have properly formatted chapters
+        const updatedDialogues = loaded.map(dialogue => {
+          if (!dialogue.hasOwnProperty('chapter')) {
+            return { ...dialogue, chapter: "1" }; // Default to chapter-1
+          }
+
+          return dialogue;
+        });
+        
+        // Extract all unique chapters from dialogues
+        const uniqueChapters = [...new Set(updatedDialogues.map(d => d.chapter))];
+        if (uniqueChapters.length > 0) {
+          setChapters(uniqueChapters.sort());
+        }
+        
+        setDialogues(updatedDialogues);
+      }
+    });
+  }, []);
+
+  //Change Chapter
+  const handleChangeChapter = (dialogueIndex, newChapterName) => {
+    const updated = [...dialogues];
+    updated[dialogueIndex].chapter = newChapterName;
+    setDialogues(updated);
+  }
+
+  //Add chapter, called by "Add Chapter" button
+  const handleAddChapter = () => {
+    const newChapterNumber = chapters.length + 1;
+    // Format as "chapter-X"
+    setChapters([...chapters, `${newChapterNumber}`]);
+  };
+
+  //Add a new dialogue
+  const handleAddDialogue = () => {
+    const newText = prompt("Enter dialogue text:");
+    if (newText && newText.trim() !== "") {
+      // Default to the latest chapter (or first if none exist)
+      const defaultChapter = chapters.length > 0 ? chapters[chapters.length - 1] : "1";
+      
+      const newDialogue = {
+        text: newText,
+        character: "player",
+        type: "Intro",
+        chapter: defaultChapter // Add formatted chapter
+      };
+      setDialogues([...dialogues, newDialogue]);
+    }
+  };
+
+  //Remove a dialogue by index
+  const handleRemoveDialogue = (index) => {
+    const updated = [...dialogues];
+    updated.splice(index, 1);
+    setDialogues(updated);
+  };
+
+  //Edit a dialogue's text
+  const handleEditDialogue = (index) => {
+    const updatedText = prompt("Edit dialogue:", dialogues[index].text);
+    if (updatedText !== null) {
+      const updated = [...dialogues];
+      updated[index].text = updatedText;
+      setDialogues(updated);
+    }
+  };
+
+  //Toggle Intro/Outro
+  const handleChangeType = (index, newType) => {
+    const updated = [...dialogues];
+    updated[index].type = updated[index].type === "Intro" ? "Outro" : "Intro";
+    setDialogues(updated);
+  }
+
+  //Moves narrative up
+  const handleMoveup = (index) => {
+    if (index > 0) {
+      const updated = [...dialogues];
+      // Swap this item with the one above
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      setDialogues(updated);
+    }
+  };
+
+  //Moves narrative down
+  const handleMoveDown = (index) => {
+    if (index < dialogues.length - 1) {
+      const updated = [... dialogues];
+      // Swap this item with the one below
+      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+      setDialogues(updated);
+    }
+  };
+
+  const handleChangeCharacter = (index, newCharacter) => {
+    const updated = [...dialogues];
+    updated[index].character = newCharacter;
+    setDialogues(updated);
+  }
+
+  const handleSaveDialogues = async () => {
+    const gameId = Curriculum.getCurrentUUID() || gameUUID;
+  
+    if (!gameId) {
+      alert("No valid game ID. Please open or create a game first.");
+      return;
+    }
+  
+    try {
+      await saveNarrativeDraftToFirebase(gameId, dialogues);
+      alert("Dialogues saved to the game node!");
+    } catch (error) {
+      console.error("Error saving dialogues:", error);
+      alert("Failed to save dialogues.");
+    }
+    console.log("Saving to Game UUID:", gameId);
+  };
+
 
   // Reset Function
   const resetCurricularValues = () => {
@@ -120,6 +254,8 @@ const CurricularModule = (props) => {
       
       // IMPORTANT: Do NOT clear the curriculum or reset the UUID
       // This keeps the connection to your dialogues intact
+      // Curriculum.clearCurriculum(); - REMOVE THIS
+      // Curriculum.CurrentConjectures = []; - REMOVE THIS
     }
   };
 
@@ -130,67 +266,13 @@ const CurricularModule = (props) => {
         <>
           <Background height={height * 1.1} width={width} />
 
-          {/* Render CurricularContentEditor */}
-          <CurricularContentEditor height={height} width={width} conjectureCallback={conjectureCallback} />
+          {/* Render StoryEditorContentEditor */}
+          <StoryEditorContentEditor height={height} width={width} dialogues={dialogues} onAddDialogue={handleAddDialogue} onMoveUp={handleMoveup} 
+                                    onRemoveDialogue={handleRemoveDialogue} onEditDialogue={handleEditDialogue} onChangeType={handleChangeType}
+                                    onMoveDown={handleMoveDown} idToSprite={idToSprite} onChangeCharacter={handleChangeCharacter} chapters={chapters}
+                                    onChangeChapter={handleChangeChapter} />
 
           {/* Buttons */}
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.5}
-            x={width * 0.1}
-            y={height * 0.23}
-            color={red}
-            fontSize={width * 0.013}
-            fontColor={white}
-            text={"SET GAME OPTIONS"}
-            fontWeight={800}
-            callback={() => {
-              console.log("Settings Menu button clicked! Sending STORYEDITOR...")
-              setShowSettingsMenu(true)// Open Settings menu
-            }}
-          />
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.5}
-            x={width * 0.4}
-            y={height * 0.23}
-            color={hotPink}
-            fontSize={width * 0.013}
-            fontColor={white}
-            text={"STORY EDITOR"}
-            fontWeight={800}
-            callback={() => {
-              console.log("STORY EDITOR button clicked!")
-              // If there is no current game ID, generate one now:
-              if (!Curriculum.getCurrentUUID()) {
-                const newId = uuidv4();  // same approach as in your database code
-                Curriculum.setCurrentUUID(newId);
-              }
-              if (storyEditorCallback) {
-                const currentUUID = Curriculum.getCurrentUUID();
-                storyEditorCallback(currentUUID);
-                console.log("State change function was called!"); //Log after calling
-              } else {
-                console.error("Error: storyEditorCallback is undefined!");
-              }
-            }}
-          />
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.5}
-            x={width * 0.7}
-            y={height * 0.23}
-            color={purple}
-            fontSize={width * 0.013}
-            fontColor={white}
-            text={"INSTRUCTIONS"}
-            fontWeight={800}
-            callback={() =>
-              alert(
-                "Click +Add Conjecture to add a level to the game.\nPress Save Draft to save an incomplete game.\nPress Publish to save a completed game."
-              )
-            }
-          />
           <RectButton
             height={height * 0.13}
             width={width * 0.26}
@@ -201,46 +283,43 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"BACK"}
             fontWeight={800}
-            callback={enhancedMainCallback}
+            callback={mainCallback}
+          />
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.45}
+            x={width * 0.06}
+            y={height * 0.93}
+            color={indigo}
+            fontSize={width * 0.014}
+            fontColor={white}
+            text={"ADD CHAPTER"}
+            fontWeight={800}
+            callback={handleAddChapter}
           />
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
             x={width * 0.3}
             y={height * 0.93}
-            color={indigo}
-            fontSize={width * 0.014}
+            color={green}
+            fontSize={width * 0.013}
             fontColor={white}
-            text={"+Add Conjecture"}
+            text={"ADD DIALOGUE"}
             fontWeight={800}
-            callback={() => {
-              setAddtoCurricular(true);
-              conjectureSelectCallback();
-            }}
+            callback={handleAddDialogue}
           />
           <RectButton
             height={height * 0.13}
-            width={width * 0.26}
-            x={width * 0.55}
+            width={width * 0.25}
+            x={width * 0.53}
             y={height * 0.93}
             color={green}
             fontSize={width * 0.013}
             fontColor={white}
-            text={"SAVE DRAFT"}
+            text={"SAVE"}
             fontWeight={800}
-            callback={() => writeToDatabaseCurricularDraft(Curriculum.getCurrentUUID())}
-          />
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.26}
-            x={width * 0.73}
-            y={height * 0.93}
-            color={blue}
-            fontSize={width * 0.015}
-            fontColor={white}
-            text={"PUBLISH"}
-            fontWeight={800}
-            callback={() => publishAndReset(Curriculum.getCurrentUUID())}
+            callback={handleSaveDialogues}
           />
         </>
       )}
@@ -259,4 +338,4 @@ const CurricularModule = (props) => {
   );
 };
 
-export default CurricularModule;
+export default StoryEditorModule;

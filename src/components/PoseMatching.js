@@ -47,7 +47,9 @@ const PoseMatching = (props) => {
   // pose for the model to emulate. If there are no more poses to emulate,
   // update the current pose with nothing
   useEffect(() => {
+    // Length of poses is greater than 0 and not transitioning
     if (poses.length > 0 && !transition) {
+      console.log("Pose is starting...");
       writeToDatabasePoseStart(poseNumberStr + " " + poseNumber, UUID);
       if (firstPose) {
         setFirstPose(false);

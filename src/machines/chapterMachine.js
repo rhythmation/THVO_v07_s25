@@ -1,28 +1,64 @@
 import { createMachine, assign } from "xstate";
+
 const chapterMachine = createMachine(
   {
     initial: "intro",
+    context: {
+      introText: [],
+      outroText: [],
+      scene: [],
+      currentText: {},
+      lastText: [],
+      cursorMode: false,
+      isOutro: false,
+      onIntroComplete: () => {},
+      onOutroComplete: () => {},
+    },
     states: {
       idle: {
         after: {
-          1000: {
-            target: "intro",
-          },
+          1000: [
+            {
+              target: "outro",
+              cond: (context) => context.isOutro,
+            },
+            {
+              target: "intro",
+            },
+          ],
         },
       },
       intro: {
-        entry: ["introDialogStep"],
+        entry: ["introDialogueStep"],
+        initial: "reading",
+        states: {
+          reading: {
+            after: {
+              1500: {
+                target: "ready",
+                actions: assign({ cursorMode: true })
+              }
+            }
+          },
+          ready: {}
+        },
         on: {
           NEXT: [
             {
               target: "intro",
               cond: "continueIntro",
+              actions: assign({ cursorMode: false })
             },
             {
-              target: "experiment",
-              cond: (context, event) => context.introText.length === 0,
+              target: "done",
+              cond: (context) => context.introText.length === 0,
+              actions: "triggerOnIntroComplete",
             },
           ],
+          RESET_CONTEXT: {
+            target: "idle",
+            actions: "resetContext",
+          },
         },
       },
       introReading: {
@@ -41,108 +77,86 @@ const chapterMachine = createMachine(
       },
       outro: {
         entry: "outroDialogStep",
+        initial: "reading",
+        states: {
+          reading: {
+            after: {
+              1500: {
+                target: "ready",
+                actions: assign({ cursorMode: true })
+              }
+            }
+          },
+          ready: {}
+        },
         on: {
           NEXT: [
             {
               target: "outro",
               cond: "continueOutro",
+              actions: assign({ cursorMode: false })
             },
             {
-              target: "loadingNextChapter",
-              actions: assign({
-                currentText: (context) => {
-                  return {
-                    text: "Hit the next button to load the next chapter...",
-                    speaker: "player",
-                  };
-                },
-                loaded: () => false,
-              }),
+              target: "done",
+              cond: (context) => context.outroText.length === 0,
+              actions: "triggerOnOutroComplete",
             },
           ],
           RESET_CONTEXT: {
-            actions: assign({
-              introText: (_, event) => event.introText,
-              outroText: (_, event) => event.outroText,
-              currentText: (_, event) => event.introText[0],
-              lastText: () => [],
-            }),
+            target: "idle",
+            actions: "resetContext",
           },
         },
       },
       loadingNextChapter: {
         on: {
           RESET_CONTEXT: {
-            target: "intro",
-            actions: assign({
-              introText: (_, event) => event.introText,
-              outroText: (_, event) => event.outroText,
-              currentText: (_, event) => null,
-              lastText: () => [],
-            }),
+            target: "idle",
+            actions: "resetContext",
           },
         },
+      },
+      done: {
+        type: "final",
+      },
+    },
+    on: {
+      RESET_CONTEXT: {
+        target: "idle",
+        actions: "resetContext",
       },
     },
   },
   {
     guards: {
-      continueIntro: (context) => {
-        return context.introText.length > 0;
-      },
-      continueOutro: (context) => {
-        return context.outroText.length > 0;
-      },
+      continueIntro: (context) => context.introText.length > 0,
+      continueOutro: (context) => context.outroText.length > 0,
     },
     actions: {
-      introDialogStep: assign({
-        currentText: (context) => {
-          if (context.introText[0]) {
-            return context.introText[0];
-          }
-          if (context.currentText) {
-            return context.currentText;
-          }
-          return {};
-        },
-        introText: (context) => {
-          if (context.introText.length > 0) {
-            return context.introText.slice(1);
-          }
-          return [];
-        },
-        lastText: (context) => {
-          if (context.introText.length > 0) {
-            return [...context.lastText, context.currentText];
-          }
-          return [];
-        },
+      resetContext: assign({
+        introText: (_, event) => event.introText,
+        outroText: (_, event) => event.outroText,
+        scene: (_, event) => event.scene,
+        currentText: (_, event) => event.isOutro ? event.outroText[0] || null : event.introText[0] || null,
+        lastText: () => [],
+        cursorMode: () => false,
+        isOutro: (_, event) => event.isOutro,
+      }),
+      introDialogueStep: assign({
+        currentText: (context) => context.introText[0] || {},
+        introText: (context) => context.introText.length > 0 ? context.introText.slice(1) : [],
+        lastText: (context) => context.introText.length > 0 ? [...context.lastText, context.currentText] : [],
       }),
       toggleCursorMode: assign({
-        cursorMode: (context) => {
-          return !context.cursorMode;
-        },
+        cursorMode: (context) => !context.cursorMode,
       }),
-      outroDialogStep: assign({
-        currentText: (context) => {
-          if (context.outroText[0]) {
-            return context.outroText[0];
-          }
-          return {};
-        },
-        outroText: (context) => {
-          if (context.outroText.length > 0) {
-            return context.outroText.slice(1);
-          }
-          return [];
-        },
-        lastText: (context) => {
-          if (context.outroText.length > 0) {
-            return [...context.lastText, context.currentText];
-          }
-          return [];
-        },
+      outroDialogStep: assign({     
+        currentText: (context) => context.outroText[0] || {},
+        outroText: (context) => context.outroText.length > 0 ? context.outroText.slice(1) : [],
+        lastText: (context) => context.outroText.length > 0 ? [...context.lastText, context.currentText] : [],
       }),
+      triggerOnIntroComplete: (context) => context.onIntroComplete(),
+      triggerOnOutroComplete: (context) => context.onOutroComplete?.(),
     },
   }
 );
