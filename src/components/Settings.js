@@ -34,7 +34,7 @@ const Settings = ({ width, height, x, y, onClose }) => {
   const updateNumberOfhints= (increment) => {
     setSettings((prev) => ({
       ...prev,
-      NumberOfhints: Math.max(0, prev. NumberOfhints + increment),
+      NumberOfhints: Math.max(0, prev.NumberOfhints + increment),
     }));
   };
 
@@ -368,7 +368,7 @@ const Settings = ({ width, height, x, y, onClose }) => {
         text={"CLOSE"}
         fontColor={"red"}
         callback={onClose}
-        fontWeight = {"blod"}
+        fontWeight = {"bold"}
    
       />
     </Container>
