@@ -6,8 +6,25 @@ import InputBox from "../InputBox";
 import { getEditLevel } from './ConjectureModule';
 
 function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback) {
-  const text = localStorage.getItem(textKey)?.slice(0, charLimit) +
-               (localStorage.getItem(textKey)?.length > charLimit ? '...' : '');
+    // fetch value once
+    const raw = localStorage.getItem(textKey);
+
+  const placeholderMap = {
+    'Conjecture Name':       'Enter level name…',
+    'Author Name':           'Author',
+    'PIN':                   '4-digit PIN',
+    'Conjecture Description':'Add a short description…',
+    'Conjecture Keywords':   'keyword1, keyword2',
+    'Multiple Choice 1':     'Choice A',
+    'Multiple Choice 2':     'Choice B',
+    'Multiple Choice 3':     'Choice C',
+    'Multiple Choice 4':     'Choice D',
+  };
+
+  const isPlaceholder = !raw;
+  const text = raw
+    ? (raw.length > charLimit ? raw.slice(0, charLimit) + '…' : raw)
+    : placeholderMap[textKey] ?? '';
 
   const height = totalHeight * scaleFactor;
   const width = totalWidth * widthMultiplier;
@@ -23,7 +40,7 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
       y={y}
       color={white}
       fontSize={totalWidth * 0.012}
-      fontColor={black}
+      fontColor={isPlaceholder ? '#888' : black}
       text={text}
       fontWeight={500}
       outlineColor={black}
@@ -37,6 +54,7 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
 
 export const NameBox = (props) => {
   const { height, width } = props;
+  const [, setRefresh] = useState(0);
 
   let titleText = "";
   if(getEditLevel())
@@ -50,6 +68,7 @@ export const NameBox = (props) => {
 
     if (newValue !== null) {
       localStorage.setItem(key, newValue);
+      setRefresh((n) => n + 1);
     }
   }
 
@@ -101,19 +120,23 @@ function createTextElement(text, xMultiplier, yMultiplier, fontSizeMultiplier, t
 
 export const PINBox = (props) => {
   const { height, width } = props;
+  const [, setRefresh] = useState(0);
 
   // Creates a popup in which the user can set a pin for their conjecture
-  function pinBoxInput() {
-    if(getEditLevel()){
-      const existingPin = localStorage.getItem('PIN');
-      let pin = prompt("Please Enter Your PIN", existingPin);
+    /* 1.  local state mirrors storage so UI is stable */
+  const [pinValue, setPinValue] = useState(localStorage.getItem('PIN') || '');
 
-      if (!isNaN(pin) && pin !== null) {
-        localStorage.setItem('PIN', pin);
-      } else if (pin !== null) {
-        alert('PIN must be numeric');
-      }
-    }
+  /* 2.  popup handler */
+  function pinBoxInput() {
+    if (!getEditLevel()) return;
+
+    const newPin = prompt('Please enter a 4-digit PIN', pinValue);
+
+    if (newPin === null) return;                 // user hit Cancel
+    if (isNaN(newPin))  return alert('PIN must be numeric');
+
+    localStorage.setItem('PIN', newPin);
+    setPinValue(newPin);                         // ← triggers rerender, no flicker
   }
 
   return (
@@ -126,10 +149,8 @@ export const PINBox = (props) => {
         y={height * 0.085}
         color={white}
         fontSize={width * 0.013}
-        fontColor={black}
-        text={
-          localStorage.getItem('PIN') || ' ' // Show existing PIN if available
-        }
+        text={pinValue || '4-digit PIN'}
+        fontColor={pinValue ? black : '#888'}
         fontWeight={300}
         callback={pinBoxInput} // Create Popup
       />
