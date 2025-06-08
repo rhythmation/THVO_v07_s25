@@ -67,7 +67,9 @@ export const currentConjecture = {
 // fill in local storage using currentConjecture if an existing conjecture is selected
 // currentConjecture receives the value when the conjecture is clicked from ConjectureSelectorModule
 function setLocalStorage(){ 
-    const conj = currentConjecture.getCurrentConjecture() ?? {};
+      const conj = currentConjecture.getCurrentConjecture() ?? {};
+
+      if (Object.keys(conj).length === 0) return;
 
   // 1. Text-box values
   keysToPush.forEach((k) => {
