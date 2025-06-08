@@ -96,7 +96,7 @@ const Story = () => {
         rowGutter
       );
     });
-    holistic = new Holistic({
+    const holistic = new Holistic({
       locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
       },
