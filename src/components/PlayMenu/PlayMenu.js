@@ -26,24 +26,9 @@ const PlayMenu = (props) => {
     const [distanceBetweenButtons, setDistanceBetweenButtons] = useState();
     const [startingX, setStartingX] = useState();
     const [state, send] = useMachine(PlayMenuMachine);
-    const [userRole, setUserRole] = useState(null);
+    const [userRole, setUserRole] = useState(role);
     const [isDataMenuVisable, setdataMenuVisable] = useState(false);
     
-    // On render get user role
-    const fetchData = async () => {
-        try {
-          const role = await getUserRoleFromDatabase();
-          setUserRole(role);
-    
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        }
-      };
-    
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     useEffect(() => {
         // Calculate the distance for buttons
         const totalAvailableWidth = width * 0.85 * (buttonList.length/7);
@@ -55,8 +40,6 @@ const PlayMenu = (props) => {
     }, [buttonList, width, height]);
     
     useEffect(() => {
-        //get user role
-        // TODO: Make this more efficient and dynamic, changing based on what the org wants
         let role = userRole;
         let list = [];
         if(role === "Admin" || role === "Developer"){ // if user is not a student
@@ -99,7 +82,7 @@ const PlayMenu = (props) => {
             fontColor={white}
             text={"Log Out"}
             fontWeight={800}
-            callback={() => firebase.auth().signOut()}
+            callback={() => logoutCallback}
           />
         </>
         )}
