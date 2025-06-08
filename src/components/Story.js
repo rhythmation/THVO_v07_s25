@@ -128,19 +128,7 @@ const Story = () => {
             width={width}
             height={height}
             startCallback={() => send("TOGGLE")}  // goes to the game
-            conjectureCallback={() => {
-              send("CONJECT");}
-              }  // goes to the Conjecture Module
             logoutCallback={() => firebase.auth().signOut()} // logs the user out
-            poseCallback={() => send("POSE")} // goes to the Pose tester
-            curricularCallback={() => send("CURRICULAR")}
-            testCallback={() => {
-              send("TEST");}
-              } // goes to the Test Module
-            UserManagementCallback={() => {
-              send("userManagementSettings");
-              console.log("User Management");}
-              } // goes to userManagement
           />
         )}
 

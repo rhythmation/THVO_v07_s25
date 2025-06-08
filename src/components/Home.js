@@ -12,7 +12,7 @@ import { onAuthStateChanged } from "firebase/auth";
 
 
 const Home = (props) => {
-  const { height, width, startCallback, editCallback, poseCallback, conjectureCallback, logoutCallback, testCallback, curricularCallback,UserManagementCallback } = props;
+  const { height, width, startCallback, logoutCallback } = props;
   const [userName, setUserName] = useState('Loading...');
 
   useEffect(() => {
