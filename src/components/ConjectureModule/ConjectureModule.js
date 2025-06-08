@@ -1,5 +1,5 @@
 import Background from "../Background";
-import React, { useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import { powderBlue, skyBlue, cornflowerBlue, green, neonGreen, black, blue, white, pink, orange, red, transparent, turquoise } from "../../utils/colors";
 import Button from "../Button";
 import RectButton from "../RectButton";
@@ -67,36 +67,48 @@ export const currentConjecture = {
 // fill in local storage using currentConjecture if an existing conjecture is selected
 // currentConjecture receives the value when the conjecture is clicked from ConjectureSelectorModule
 function setLocalStorage(){ 
-  const conjecture = currentConjecture.getCurrentConjecture();
-  if (currentConjecture.getCurrentConjecture() != null && currentConjecture.getCurrentConjecture().length != 0) {
-    // fill in keys pushed to Text Boxes by writeToDatabase in database.js
-    for (i = 0; i < keysToPush.length; i++){
-      localStorage.setItem(keysToPush[i], conjecture['Text Boxes'][keysToPush[i]]);
+    const conj = currentConjecture.getCurrentConjecture() ?? {};
+
+  // 1. Text-box values
+  keysToPush.forEach((k) => {
+    const val = conj['Text Boxes']?.[k];
+    if (val !== undefined && val !== null && val !== '') {
+      localStorage.setItem(k, val);
+    } else {
+      localStorage.removeItem(k);          // ← no bogus "undefined"
     }
+  });
 
-    // fill in poses from database
-    if (conjecture['Intermediate Pose']['poseData'] !== undefined)
-      localStorage.setItem('start.json' , conjecture['Start Pose']['poseData']);
-    if (conjecture['Intermediate Pose']['poseData'] !== undefined)
-      localStorage.setItem('intermediate.json' , conjecture['Intermediate Pose']['poseData']);
-    if (conjecture['Intermediate Pose']['poseData'] !== undefined)
-      localStorage.setItem('end.json' , conjecture['End Pose']['poseData']);
+  // 2. Pose JSON
+  const poseKeys = [
+    ['Start Pose',        'start.json'],
+    ['Intermediate Pose', 'intermediate.json'],
+    ['End Pose',          'end.json'],
+  ];
+  poseKeys.forEach(([dbKey, lsKey]) => {
+    const pose = conj[dbKey]?.poseData;
+    if (pose) {
+      localStorage.setItem(lsKey, pose);
+    } else {
+      localStorage.removeItem(lsKey);
+    }
+  });
 
-    currentConjecture.CurrentUUID = conjecture['UUID']; // set the UUID before clearing currentConjecture
-    currentConjecture.CurrentConjecture = null; // clear currentConjecture to avoid an infinite loop
-  }
+  // 3. Remember UUID (needed when the user hits SAVE/PUBLISH)
+  currentConjecture.CurrentUUID = conj.UUID ?? null;
+  currentConjecture.CurrentConjecture = null;   // avoid re-entrancy
 
-  if(localStorage.getItem("Correct Answer") == null) { // ensures that there is always a correct answer
-    localStorage.setItem("Correct Answer", "A");
-  }
-}
+  // 4. Default correct answer
+  if (!localStorage.getItem('Correct Answer')) localStorage.setItem('Correct Answer', 'A');
+ }
 
 const ConjectureModule = (props) => {
   const { height, width, poseData, columnDimensions, rowDimensions, editCallback, backCallback, testCallback } = props;
 
   const [state, send] = useMachine(ConjectureEditorMachine);
   const [isSaved, setIsSaved] = useState(false);
-  setLocalStorage();
+  
+  useEffect(() => { setLocalStorage(); }, []);
 
   return (
     <>
