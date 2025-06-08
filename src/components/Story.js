@@ -143,84 +143,7 @@ const Story = () => {
               } // goes to userManagement
           />
         )}
-        {state.value === "curricular" && (
-          <CurricularModule
-            width={width}
-            height={height}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            conjectureCallback={() => send("CONJECT")}  // goes to the Conjecture Module
-            mainCallback={() => send("HOME")} // goes to Home
-            conjectureSelectCallback={() => send("CONJECTURESELECT")}
-          />
-        )}
-        {state.value === "conjectureSelect" && (
-          <ConjectureSelectorModule
-            width={width}
-            height={height}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            conjectureCallback={() => send("CONJECT")}  // goes to the Conjecture Module
-            curricularCallback={() => send("CURRICULAR")}
-          />
-        )}
-        {state.value === "pose" && (
-          <ConjecturePoseContainer
-          
-            height={height}
-            width={width}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            editCallback={() => send("AUTHOR")} // goes to the Pose Sequence Editor
-            mainCallback={() => send("HOME")} // goes to Home
-            poseData={poseData}
-            UUID={"b56e115e-2efa-40e0-9c37-72b079907653"}
-          />
-        )
-        }
-        
-        {state.value === "conjecture" && (
-          <ConjectureModule
-            width={width}
-            height={height}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            editCallback={() => send("AUTHOR")} // goes to the Pose Sequence Editor
-            mainCallback={() => send("HOME")} // goes to Home
-            testCallback={() => send("TEST")} // goes to test
-          />
-        )}
-        {state.value === "edit" && (
-          <PoseAuthoring
-            width={width}
-            height={height}
-            poseData={poseData}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            conjectureCallback={() => send("CONJECT")}  // goes to the Conjecture Module
-          />
-        )}
-        {state.value === "test" && (
-          <PoseTest
-            width={width}
-            height={height}
-            poseData={poseData}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            conjectureCallback={() => send("CONJECT")}
-          />
-        )}
-        
-        {/* // {state.value === "play" && (
-        //   <Background height={height} width={width} />
-        //   // <PlayMenu
-        //   //   width={width}
-        //   //   height={height}
-        //   //   columnDimensions={columnDimensions}
-        //   //   rowDimensions={rowDimensions}
-        //   //   poseData={poseData}
-        //   // />
-        // )} */}
+
         {state.value === "main" && (
           <PlayMenu
             width={width}
@@ -237,31 +160,6 @@ const Story = () => {
           //   width={width}
           // />
         )}
-
-
-
-      {state.value === "ADDNEWUSER" && (
-          <NewUserModule
-            width={width}
-            height={height}
-            UserManagementCallback={() => {
-              send("userManagementSettings");
-              console.log("User Management");}
-              }// goes to user management
-        />
-        )}
-
-        {state.value === "userManagementSettings" && (
-          <UserManagementModule
-            width={width}
-            height={height}
-            mainCallback={() => send("HOME")} // goes to Home
-            addNewUserCallback={() => send("ADDNEWUSER")} // goes to add new user section
-        />
-        )}
-
-
-
       </Stage>
     </>
   );
