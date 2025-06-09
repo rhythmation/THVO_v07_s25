@@ -82,7 +82,7 @@ const PlayMenu = (props) => {
             fontColor={white}
             text={"Log Out"}
             fontWeight={800}
-            callback={() => logoutCallback}
+            callback={logoutCallback}
           />
         </>
         )}
