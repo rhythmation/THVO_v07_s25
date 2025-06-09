@@ -749,13 +749,24 @@ export const searchConjecturesByWord = async (searchWord) => {
     const matchingConjectures = [];
 
     // This takes forever..............
+    const normalizedSearchWord = searchWord?.toLowerCase?.() || "";
+    const isCleared = normalizedSearchWord.trim() === ""; // Treat "" or all-spaces as cleared
+
     querySnapshot.forEach((snapshot) => {
-      // Check if snapshot data contains searchWord as a key
       const searchData = snapshot.val();
-      if (searchData && searchData['Search Words'] && searchData['Search Words'][searchWord]) {
-        // Found searchWord key in this snapshot
-        // Add this snapshot's data to the list of matching conjectures
+      const searchWords = searchData?.['Search Words'];
+
+      if (isCleared) {
+        // If cleared or empty, show all
         matchingConjectures.push(searchData);
+      } else if (searchWords) {
+        // Case-insensitive check against searchWords keys
+        for (const word of Object.keys(searchWords)) {
+          if (word.toLowerCase() === normalizedSearchWord) {
+            matchingConjectures.push(searchData);
+            break; // stop checking more keys
+          }
+        }
       }
     });
 

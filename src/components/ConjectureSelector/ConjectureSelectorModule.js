@@ -51,7 +51,7 @@ function handleLevelClicked(conjecture, conjectureCallback){
 }
 
 const ConjectureSelectModule = (props) => {
-  
+  console.log("ConjectureSelectModule Runs now");
   const { height, width, conjectureCallback, backCallback, curricularCallback} = props;
   const [conjectureList, setConjectureList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -198,15 +198,15 @@ const ConjectureSelectModule = (props) => {
   };
 
   const [search, setSearch] = useState("search by one word");
-  function sendSearchPrompt(){
-    let enteredSearch = prompt("Please Enter a Word to Search Conjectures", search);
-    if (enteredSearch !== null) {
-      setSearch(enteredSearch)
-    } else if (enteredSearch !== null) {
-    alert('Error reading search: No value');
+  function sendSearchPrompt() {
+    const enteredSearch = prompt("Search by Word", search);
+    // Treat null or empty as "cleared"
+    if (enteredSearch === null || enteredSearch.trim() === "") {
+      setSearch(""); // triggers show all
+    } else {
+      setSearch(enteredSearch);
     }
-
-  } 
+  }
 
   return (
     <>
