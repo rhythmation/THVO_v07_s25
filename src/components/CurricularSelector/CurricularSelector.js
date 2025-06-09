@@ -175,31 +175,36 @@ const CurricularSelectModule = (props) => {
     <>
       <Background height={height * 1.1} width={width} />
 
-      <RectButton
-        height={height * 0.13}
-        width={width * 0.26}
-        x={width * 0.15}
-        y={height * 0.93}
-        color={blue}
-        fontSize={width * 0.014}
-        fontColor={white}
-        text={"PREVIOUS"}
-        fontWeight={800}
-        callback={prevPage}
-      />
+      {totalPages > 1 && (
+      <>
+        <RectButton
+          height={height * 0.13}
+          width={width * 0.26}
+          x={width * 0.15}
+          y={height * 0.93}
+          color={blue}
+          fontSize={width * 0.014}
+          fontColor={white}
+          text={"PREVIOUS"}
+          fontWeight={800}
+          callback={prevPage}
+        />
 
-      <RectButton
-        height={height * 0.13}
-        width={width * 0.26}
-        x={width * 0.56}
-        y={height * 0.93}
-        color={blue}
-        fontSize={width * 0.014}
-        fontColor={white}
-        text={"NEXT"}
-        fontWeight={800}
-        callback={nextPage}
-      />
+        <RectButton
+          height={height * 0.13}
+          width={width * 0.26}
+          x={width * 0.56}
+          y={height * 0.93}
+          color={blue}
+          fontSize={width * 0.014}
+          fontColor={white}
+          text={"NEXT"}
+          fontWeight={800}
+          callback={nextPage}
+        />
+      </>
+    )}
+
 
       <RectButton
         height={height * 0.13}
