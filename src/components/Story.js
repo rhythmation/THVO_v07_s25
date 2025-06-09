@@ -96,7 +96,7 @@ const Story = () => {
         rowGutter
       );
     });
-    holistic = new Holistic({
+    const holistic = new Holistic({
       locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
       },
@@ -146,8 +146,10 @@ const Story = () => {
     !isAuthenticated || !userName || userName === "USER NOT FOUND" || !userRole;
 
   return (
-    <>
-      {loading && <Loader />}
+  <>
+    {loading ? (
+      <Loader />
+    ) : (
       <Stage
         height={height}
         width={width}
@@ -179,8 +181,10 @@ const Story = () => {
           />
         )}
       </Stage>
-    </>
-  );
+    )}
+  </>
+);
+
 };
 
 export default Story;
