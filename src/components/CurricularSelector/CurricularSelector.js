@@ -226,11 +226,16 @@ const CurricularSelectModule = (props) => {
         x={width * 0.68}
         y={height * 0.93}
         color={green}
+        alpha={Curriculum.getCurrentUUID() ? 1 : 0.3}
         fontSize={width * 0.014}
         fontColor={white}
-        text={"OK"}
+        text="OK"
         fontWeight={800}
-        callback={curricularCallback}
+        callback={
+          Curriculum.getCurrentUUID() 
+            ? curricularCallback 
+            : null
+        }
       />
 
       <CurricularSelectorBoxes height={height} width={width} />
