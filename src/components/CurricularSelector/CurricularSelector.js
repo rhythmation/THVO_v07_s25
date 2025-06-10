@@ -36,7 +36,12 @@ export function handlePIN(curricular, message = "Please Enter the PIN."){ // thi
   return false; // do nothing if cancel is clicked
 }
 
-function handleGameClicked(curricular, curricularCallback){
+function handleGameClicked(curricular){
+  if (Curriculum.getCurrentUUID() === curricular["UUID"]) {
+    Curriculum.setCurrentUUID(null);
+    return;
+  }
+
   if(playGame){ // don't need a PIN to play the game
     // write in a new session of the game to firebase
     Curriculum.setCurrentUUID(curricular["UUID"]);
