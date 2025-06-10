@@ -103,9 +103,9 @@ const CurricularSelectModule = (props) => {
             width={totalWidth * 0.8}
             x={totalWidth * (xMultiplier-0.08)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier/1.3}
-            fontColor={blue}
+            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
+            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
+            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
             text={curricular["CurricularAuthor"]}
             fontWeight="bold"
             callback = {() => {
@@ -122,9 +122,9 @@ const CurricularSelectModule = (props) => {
             width={totalWidth * 0.6}
             x={totalWidth * (xMultiplier + 0.25)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier / 1.3} 
-            fontColor={blue}
+            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
+            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
+            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
             text={curricular["CurricularName"]}
             fontWeight="bold"
             callback = {() => {handleGameClicked(curricular, curricularCallback)}}
@@ -139,9 +139,9 @@ const CurricularSelectModule = (props) => {
             width={totalWidth * 0.8}
             x={totalWidth * (xMultiplier +0.5)} 
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75} 
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier / 1.3}
-            fontColor={blue}
+            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
+            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
+            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
             text={curricular["CurricularKeywords"]}
             fontWeight="bold"
             callback = {() => {handleGameClicked(curricular, curricularCallback)}}
@@ -156,9 +156,9 @@ const CurricularSelectModule = (props) => {
               width={totalWidth * (xMultiplier * 0.85 )}
               x={totalWidth * xMultiplier - totalWidth * xMultiplier * 0.95}
               y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75 }
-              color={white}
-              fontSize={totalWidth * fontSizeMultiplier / 1.3}
-              fontColor={blue}
+              color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
+              fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
+              fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
               text={curricular["isFinal"] ? "X" : " "}
               fontWeight="bold"
               callback = {() => {handleGameClicked(curricular, curricularCallback)}}
