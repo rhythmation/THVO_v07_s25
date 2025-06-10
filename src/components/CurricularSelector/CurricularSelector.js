@@ -41,13 +41,13 @@ function handleGameClicked(curricular, curricularCallback){
     // write in a new session of the game to firebase
     Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
-    curricularCallback();
+    // curricularCallback();
   }
   else if(handlePIN(curricular) && !playGame){
     console.log("Attempting to edit game");
     Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
-    curricularCallback();
+    // curricularCallback();
   }
 }
 
@@ -175,7 +175,7 @@ const CurricularSelectModule = (props) => {
     <>
       <Background height={height * 1.1} width={width} />
 
-      {totalPages > 1 && (
+      {(
       <>
         <RectButton
           height={height * 0.13}
@@ -188,6 +188,7 @@ const CurricularSelectModule = (props) => {
           text={"PREVIOUS"}
           fontWeight={800}
           callback={prevPage}
+          alpha={totalPages === 1 || currentPage === 1 ? 0.3 : 1}
         />
 
         <RectButton
@@ -201,6 +202,7 @@ const CurricularSelectModule = (props) => {
           text={"NEXT"}
           fontWeight={800}
           callback={nextPage}
+          alpha={totalPages === 1 || currentPage === totalPages ? 0.3 : 1}
         />
       </>
     )}
@@ -228,7 +230,7 @@ const CurricularSelectModule = (props) => {
         fontColor={white}
         text={"OK"}
         fontWeight={800}
-        callback={null}
+        callback={curricularCallback}
       />
 
       <CurricularSelectorBoxes height={height} width={width} />
