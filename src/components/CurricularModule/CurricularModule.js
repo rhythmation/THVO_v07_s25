@@ -66,11 +66,11 @@ export const Curriculum = {
   async setCurricularEditor(curricular){ // fill in curriculum data
     this.CurrentConjectures = []; // remove previous list of levels
     if(curricular["ConjectureUUIDs"]){ // only fill in existing values
-      for(i=0; i < curricular["ConjectureUUIDs"].length; i++){
-        conjectureList = await getConjectureDataByUUID(curricular["ConjectureUUIDs"][i]); //getConjectureDataByUUID returns a list
-        conjecture = conjectureList[curricular["ConjectureUUIDs"][i]]; // get the specific conjecture from that list
-        this.CurrentConjectures.push(conjecture);
-      }
+      for (let i = 0; i < curricular.ConjectureUUIDs.length; i++) {
+   const conjectureList = await getConjectureDataByUUID(curricular.ConjectureUUIDs[i]);
+   const conjecture      = conjectureList[curricular.ConjectureUUIDs[i]];
+   this.CurrentConjectures.push(conjecture);
+ }
     }
       localStorage.setItem('CurricularName', curricular["CurricularName"]);
       localStorage.setItem('CurricularAuthor', curricular["CurricularAuthor"]);
