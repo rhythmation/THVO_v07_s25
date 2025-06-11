@@ -223,7 +223,10 @@ const CurricularSelectModule = (props) => {
         fontColor={white}
         text={"BACK"}
         fontWeight={800}
-        callback={mainCallback}
+        callback={() => {
+          Curriculum.setCurrentUUID(null);
+          mainCallback();
+        }}
       />
       <RectButton
         height={height * 0.13}
