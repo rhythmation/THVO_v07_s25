@@ -288,7 +288,7 @@ const StoryEditorModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
-            x={width * 0.06}
+            x={width * 0.27}
             y={height * 0.93}
             color={indigo}
             fontSize={width * 0.014}
@@ -300,9 +300,9 @@ const StoryEditorModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
-            x={width * 0.3}
+            x={width * 0.47}
             y={height * 0.93}
-            color={green}
+            color={indigo}
             fontSize={width * 0.013}
             fontColor={white}
             text={"ADD DIALOGUE"}
@@ -312,7 +312,7 @@ const StoryEditorModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.25}
-            x={width * 0.53}
+            x={width * 0.73}
             y={height * 0.93}
             color={green}
             fontSize={width * 0.013}
@@ -320,6 +320,33 @@ const StoryEditorModule = (props) => {
             text={"SAVE"}
             fontWeight={800}
             callback={handleSaveDialogues}
+          />
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.02}
+            y={height * 0.93}
+            color={blue}
+            fontSize={width * 0.014}
+            fontColor={white}
+            text={"PREVIOUS"}
+            fontWeight={800}
+            callback={null}//{totalPages <= 1 || currentPage === 0 ? null : prevPage}
+            //alpha={totalPages <= 1 || currentPage === 0 ? 0.3 : 1}
+          />
+
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.14}
+            y={height * 0.93}
+            color={blue}
+            fontSize={width * 0.014}
+            fontColor={white}
+            text={"NEXT"}
+            fontWeight={800}
+            callback={null}//{totalPages <= 1 || currentPage === totalPages - 1 ? null : nextPage}
+            //alpha={totalPages <= 1 || currentPage === totalPages - 1 ? 0.3 : 1}
           />
         </>
       )}
