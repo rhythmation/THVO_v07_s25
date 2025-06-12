@@ -216,6 +216,7 @@ const PlayMenu = (props) => {
             width={width}
             height={height}
             mainCallback={() => send("MAIN")}
+            curricularCallback={() => send("NEWGAME")}
             gameUUID={Curriculum.getCurrentUUID()}
           />
         )}

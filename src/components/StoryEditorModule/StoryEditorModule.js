@@ -87,7 +87,7 @@ export const Curriculum = {
 };
 
 const StoryEditorModule = (props) => {
-  const { height, width, mainCallback, gameUUID, conjectureSelectCallback, conjectureCallback } = props;
+  const { height, width, mainCallback, gameUUID, curricularCallback, conjectureSelectCallback, conjectureCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   // Stores dialogues
@@ -283,7 +283,7 @@ const StoryEditorModule = (props) => {
             fontColor={white}
             text={"BACK"}
             fontWeight={800}
-            callback={mainCallback}
+            callback={curricularCallback}
           />
           <RectButton
             height={height * 0.13}
