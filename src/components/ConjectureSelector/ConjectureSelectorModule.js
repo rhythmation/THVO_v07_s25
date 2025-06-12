@@ -55,6 +55,7 @@ const ConjectureSelectModule = (props) => {
   const { height, width, conjectureCallback, backCallback, curricularCallback} = props;
   const [conjectureList, setConjectureList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedConjecture, setSelectedConjecture] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +98,15 @@ const ConjectureSelectModule = (props) => {
     
   };
 
+  // Function to handle conjecture selection
+  const handleConjectureSelection = (conjecture) => {
+    if (selectedConjecture && selectedConjecture.UUID === conjecture.UUID) {
+      setSelectedConjecture(null); // Deselect if clicking the same conjecture
+    } else {
+      setSelectedConjecture(conjecture); // Select the new conjecture
+    }
+  };
+
   // use to determine the subset of conjectures to display based on the current page
   const startIndex = currentPage * conjecturesPerPage;
   const currentConjectures = conjectureList.slice(startIndex, startIndex + conjecturesPerPage);
@@ -112,12 +122,12 @@ const ConjectureSelectModule = (props) => {
             width={totalWidth * 0.8}
             x={totalWidth * (xMultiplier-0.08)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier/1.3}
-            fontColor={blue}
+            color={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? neonGreen : white}
+            fontSize={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.3}
+            fontColor={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? white : blue}
             text={conjecture["Text Boxes"]["Author Name"]}
             fontWeight="bold"
-            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+            callback = {() => handleConjectureSelection(conjecture)}
           />
         ))}
 
@@ -128,12 +138,12 @@ const ConjectureSelectModule = (props) => {
             width={totalWidth * 0.6}
             x={totalWidth * (xMultiplier + 0.25)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier / 1.3} 
-            fontColor={blue}
+            color={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? neonGreen : white}
+            fontSize={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier / 1.3}
+            fontColor={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? white : blue}
             text={conjecture["Text Boxes"]["Conjecture Name"]}
             fontWeight="bold"
-            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+            callback = {() => handleConjectureSelection(conjecture)}
           />
         
         ))}
@@ -145,12 +155,12 @@ const ConjectureSelectModule = (props) => {
             width={totalWidth * 0.8}
             x={totalWidth * (xMultiplier +0.5)} 
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75} 
-            color={white}
-            fontSize={totalWidth * fontSizeMultiplier / 1.3}
-            fontColor={blue}
+            color={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? neonGreen : white}
+            fontSize={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier / 1.3}
+            fontColor={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? white : blue}
             text={conjecture["Text Boxes"]["Conjecture Keywords"]}
             fontWeight="bold"
-            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+            callback = {() => handleConjectureSelection(conjecture)}
           />
         ))}
 
@@ -182,12 +192,12 @@ const ConjectureSelectModule = (props) => {
               width={totalWidth * (xMultiplier * 0.85 )}
               x={totalWidth * xMultiplier - totalWidth * xMultiplier * 0.95}
               y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75 }
-              color={white}
-              fontSize={totalWidth * fontSizeMultiplier / 1.3}
-              fontColor={blue}
+              color={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? neonGreen : white}
+              fontSize={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier / 1.3}
+              fontColor={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? white : blue}
               text={conjecture["isFinal"] ? "X" : " "}
               fontWeight="bold"
-              callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+              callback = {() => handleConjectureSelection(conjecture)}
             />
           ))
             
@@ -282,11 +292,16 @@ const ConjectureSelectModule = (props) => {
         x={width * 0.68}
         y={height * 0.93}
         color={green}
+        alpha={selectedConjecture ? 1 : 0.3}
         fontSize={width * 0.014}
         fontColor={white}
         text={"OK"}
         fontWeight={800}
-        callback={null}
+        callback={
+          selectedConjecture 
+            ? () => handleLevelClicked(selectedConjecture, conjectureCallback)
+            : null
+        }
       />
 
       <ConjectureSelectorBoxes height={height} width={width} />
@@ -296,4 +311,4 @@ const ConjectureSelectModule = (props) => {
 };
 
 
-export default ConjectureSelectModule; 
+export default ConjectureSelectModule;
