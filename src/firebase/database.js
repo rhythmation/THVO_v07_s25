@@ -429,6 +429,15 @@ export const writeToDatabaseCurricularDraft = async (UUID) => {
     CurricularID = UUID;
   }
 
+  // First, load any existing dialogues to preserve them
+  let existingDialogues = [];
+  try {
+    existingDialogues = await loadGameDialoguesFromFirebase(CurricularID) || [];
+    console.log("Preserving existing dialogues:", existingDialogues.length);
+  } catch (error) {
+    console.warn("No existing dialogues found or error loading dialogues:", error);
+  }
+
   //get the UUID of each conjecture
   const conjectureList = Curriculum.getCurrentConjectures();
   let conjectures = [];
@@ -466,6 +475,8 @@ export const writeToDatabaseCurricularDraft = async (UUID) => {
     // auto set author for security
     set(ref(db, `${CurricularPath}/Author`), userName),
     set(ref(db, `${CurricularPath}/AuthorID`), userId),
+    // CRITICAL: Preserve dialogues when saving draft as well
+    set(ref(db, `${CurricularPath}/Dialogues`), existingDialogues),
   ];
 
   return promises && alert("Game Draft saved");
