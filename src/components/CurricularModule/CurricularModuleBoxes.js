@@ -98,15 +98,15 @@ function createTextElement(text, xMultiplier, yMultiplier, fontSizeMultiplier, t
 }
 
 
-function drawCurriculum(xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth, totalHeight, conjectureCallback) {
+const CurriculumList = ({ xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth, totalHeight, conjectureCallback }) => {
   const conjectureList = Curriculum.getCurrentConjectures();
   //use to get a fixed number of conjectures per page and to navigate between the pages
   const conjecturesPerPage = 6;
   const totalPages = Math.ceil(conjectureList.length / conjecturesPerPage);
   const [currentPage, setCurrentPage] = useState(0);
 
-  if (conjectureList.length == 0){
-    return;
+  if (conjectureList.length === 0){
+    return null;
   }
 
   const nextPage = () => {
@@ -123,7 +123,6 @@ function drawCurriculum(xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth
   // use to determine the subset of conjectures to display based on the current page
   const startIndex = currentPage * conjecturesPerPage;
   const currentConjectures = conjectureList.slice(startIndex, startIndex + conjecturesPerPage);
-
 
   return (
     <>
@@ -234,7 +233,8 @@ function drawCurriculum(xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth
         fontColor={white}
         text={"PREVIOUS"}
         fontWeight={800}
-        callback={prevPage}
+        callback={currentPage > 0 ? prevPage : null}
+        alpha={currentPage > 0 ? 1 : 0.3}
       />
 
       <RectButton
@@ -247,7 +247,8 @@ function drawCurriculum(xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth
         fontColor={white}
         text={"NEXT"}
         fontWeight={800}
-        callback={nextPage}
+        callback={currentPage < totalPages - 1 ? nextPage : null}
+        alpha={currentPage < totalPages - 1 ? 1 : 0.3}
       />
     </>
   );
@@ -275,7 +276,14 @@ export const CurricularContentEditor = (props) => {
       {createTextElement("Conjecture Name", 0.275, 0.32, 0.015, width, height)}
       {createTextElement("Keywords", 0.58, 0.32, 0.015, width, height)}
 
-      {drawCurriculum(0.1, 0.3, 0.018, width, height, conjectureCallback)}
+      <CurriculumList 
+        xMultiplier={0.1} 
+        yMultiplier={0.3} 
+        fontSizeMultiplier={0.018} 
+        totalWidth={width} 
+        totalHeight={height} 
+        conjectureCallback={conjectureCallback} 
+      />
     </>
   );
 };
