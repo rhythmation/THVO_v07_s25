@@ -84,8 +84,8 @@ const Story = () => {
       setHeight(window.innerHeight);
       setWidth(window.innerWidth);
       [rowDimensions, columnDimensions] = generateRowAndColumnFunctions(
-        window.innerWidth,
-        window.innerHeight,
+        width,
+        height,
         numRows,
         numColumns,
         marginBetweenRows,
