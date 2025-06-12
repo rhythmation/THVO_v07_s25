@@ -1,67 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import Background from "../Background";
-import { blue, white, red, neonGreen,green, black } from "../../utils/colors";
+import { blue, white, red, neonGreen, green, black } from "../../utils/colors";
 import RectButton from "../RectButton";
 import { getCurricularList, writeToDatabaseGameSelect, writeToDatabaseNewSession } from "../../firebase/database";
 import { getUserNameFromDatabase, getUserRoleFromDatabase } from "../../firebase/userDatabase";
 import { CurricularSelectorBoxes } from "./CurricularSelectorModuleBoxes";
 import { useMachine } from "@xstate/react";
-import {Curriculum} from "../CurricularModule/CurricularModule";
+import { Curriculum } from "../CurricularModule/CurricularModule";
 
 export let playGame = false; // keep track of whether the curricular content list is being used to edit or play games.
-
 
 export function getPlayGame() {
   return playGame;
 }
+
 export function setPlayGame(trueOrFalse) {
   playGame = trueOrFalse;
 }
 
-export function handlePIN(curricular, message = "Please Enter the PIN."){ // this function is meant to be used as an if statement (ex: if(handlePIN){...} )
+export function handlePIN(curricular, message = "Please Enter the PIN.") { // this function is meant to be used as an if statement (ex: if(handlePIN){...} )
   const existingPIN = curricular["CurricularPIN"];
 
-  if(existingPIN == "" || existingPIN == "undefined" || existingPIN == null){ // no existing PIN
+  if (existingPIN == "" || existingPIN == "undefined" || existingPIN == null) { // no existing PIN
     return true;
   }
 
   const enteredPIN = prompt(message);
 
-  if(enteredPIN == existingPIN){ // PIN is successful
+  if (enteredPIN == existingPIN) { // PIN is successful
     return true;
   }
-  else if(enteredPIN != null && enteredPIN != ""){ // recursively try to have the user enter a PIN when it is incorrect
-    return handlePIN(curricular, message = "Incorrect PIN, please try again.");
+  else if (enteredPIN != null && enteredPIN != "") { // recursively try to have the user enter a PIN when it is incorrect
+    return handlePIN(curricular, "Incorrect PIN, please try again.");
   }
   return false; // do nothing if cancel is clicked
 }
 
-function handleGameClicked(curricular){
+function handleGameClicked(curricular, curricularCallback) {
   if (Curriculum.getCurrentUUID() === curricular["UUID"]) {
     Curriculum.setCurrentUUID(null);
     return;
   }
 
-  if(playGame){ // don't need a PIN to play the game
+  if (playGame) { // don't need a PIN to play the game
     // write in a new session of the game to firebase
     Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
-    // curricularCallback();
+    curricularCallback();
   }
-  else if(handlePIN(curricular) && !playGame){
+  else if (handlePIN(curricular) && !playGame) {
     console.log("Attempting to edit game");
     Curriculum.setCurrentUUID(curricular["UUID"]);
     Curriculum.setCurricularEditor(curricular);
-    // curricularCallback();
+    curricularCallback();
   }
 }
 
 const CurricularSelectModule = (props) => {
   
-  const { height, width, mainCallback, curricularCallback} = props;
+  const { height, width, mainCallback, curricularCallback } = props;
   const [curricularList, setCurricularList] = useState([]);
   const [userRole, setUserRole] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedCurricular, setSelectedCurricular] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,9 +88,19 @@ const CurricularSelectModule = (props) => {
       setCurrentPage(currentPage + 1);
     }
   };
+  
   const prevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Function to handle curricular selection
+  const handleCurricularSelection = (curricular) => {
+    if (selectedCurricular && selectedCurricular.UUID === curricular.UUID) {
+      setSelectedCurricular(null); // Deselect if clicking the same curricular
+    } else {
+      setSelectedCurricular(curricular); // Select the new curricular
     }
   };
 
@@ -103,75 +114,76 @@ const CurricularSelectModule = (props) => {
       <>
         {currentCurriculars.map((curricular, index) => (
           <RectButton
-            key={index}
-            height={totalHeight /2 * yMultiplier}
+            key={`author-${index}`}
+            height={totalHeight / 2 * yMultiplier}
             width={totalWidth * 0.8}
-            x={totalWidth * (xMultiplier-0.08)}
+            x={totalWidth * (xMultiplier - 0.08)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
-            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
-            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
+            color={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? neonGreen : white}
+            fontSize={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? totalWidth * fontSizeMultiplier / 1.1 : totalWidth * fontSizeMultiplier / 1.4}
+            fontColor={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? white : blue}
             text={curricular["CurricularAuthor"]}
             fontWeight="bold"
-            callback = {() => {
-              handleGameClicked(curricular, curricularCallback);
-              writeToDatabaseNewSession(curricular["UUID"], curricular["CurricularName"], userRole);
+            callback={() => {
+              handleCurricularSelection(curricular);
             }}
           />
         ))}
 
         {currentCurriculars.map((curricular, index) => (
           <RectButton
-            key={index}
+            key={`name-${index}`}
             height={totalHeight / 2 * yMultiplier}
             width={totalWidth * 0.6}
             x={totalWidth * (xMultiplier + 0.25)}
             y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
-            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
-            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
-            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
+            color={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? neonGreen : white}
+            fontSize={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? totalWidth * fontSizeMultiplier / 1.1 : totalWidth * fontSizeMultiplier / 1.4}
+            fontColor={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? white : blue}
             text={curricular["CurricularName"]}
             fontWeight="bold"
-            callback = {() => {handleGameClicked(curricular, curricularCallback)}}
+            callback={() => {
+              handleCurricularSelection(curricular);
+            }}
           />
-        
         ))}
 
         {currentCurriculars.map((curricular, index) => (
           <RectButton
-            key={index}
+            key={`keywords-${index}`}
             height={totalHeight / 2 * yMultiplier}
             width={totalWidth * 0.8}
-            x={totalWidth * (xMultiplier +0.5)} 
-            y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75} 
-            color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
-            fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
-            fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
+            x={totalWidth * (xMultiplier + 0.5)}
+            y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
+            color={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? neonGreen : white}
+            fontSize={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? totalWidth * fontSizeMultiplier / 1.1 : totalWidth * fontSizeMultiplier / 1.4}
+            fontColor={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? white : blue}
             text={curricular["CurricularKeywords"]}
             fontWeight="bold"
-            callback = {() => {handleGameClicked(curricular, curricularCallback)}}
+            callback={() => {
+              handleCurricularSelection(curricular);
+            }}
           />
         ))}
 
         {/* show an X if the game (curricular) is published */}
-        {(currentCurriculars.map((curricular, index) => (
-            <RectButton
-              key={index}
-              height={totalHeight / 2 * yMultiplier}
-              width={totalWidth * (xMultiplier * 0.85 )}
-              x={totalWidth * xMultiplier - totalWidth * xMultiplier * 0.95}
-              y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75 }
-              color={Curriculum.getCurrentUUID() === curricular["UUID"] ? neonGreen : white}
-              fontSize={Curriculum.getCurrentUUID() === curricular["UUID"] ? totalWidth * fontSizeMultiplier/1.1 : totalWidth * fontSizeMultiplier/1.4}
-              fontColor={Curriculum.getCurrentUUID() === curricular["UUID"] ? white : blue}
-              text={curricular["isFinal"] ? "X" : " "}
-              fontWeight="bold"
-              callback = {() => {handleGameClicked(curricular, curricularCallback)}}
-            />
-          ))
-            
-          )  
-        }
+        {currentCurriculars.map((curricular, index) => (
+          <RectButton
+            key={`status-${index}`}
+            height={totalHeight / 2 * yMultiplier}
+            width={totalWidth * (xMultiplier * 0.85)}
+            x={totalWidth * xMultiplier - totalWidth * xMultiplier * 0.95}
+            y={totalHeight * index * 4 * fontSizeMultiplier + totalHeight * yMultiplier * 0.75}
+            color={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? neonGreen : white}
+            fontSize={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? totalWidth * fontSizeMultiplier / 1.1 : totalWidth * fontSizeMultiplier / 1.4}
+            fontColor={selectedCurricular && selectedCurricular.UUID === curricular["UUID"] ? white : blue}
+            text={curricular["isFinal"] ? "X" : " "}
+            fontWeight="bold"
+            callback={() => {
+              handleCurricularSelection(curricular);
+            }}
+          />
+        ))}
       </>
     );
   };
@@ -180,38 +192,33 @@ const CurricularSelectModule = (props) => {
     <>
       <Background height={height * 1.1} width={width} />
 
-      {(
-      <>
-        <RectButton
-          height={height * 0.13}
-          width={width * 0.26}
-          x={width * 0.15}
-          y={height * 0.93}
-          color={blue}
-          fontSize={width * 0.014}
-          fontColor={white}
-          text={"PREVIOUS"}
-          fontWeight={800}
-          callback={prevPage}
-          alpha={totalPages === 1 || currentPage === 1 ? 0.3 : 1}
-        />
+      <RectButton
+        height={height * 0.13}
+        width={width * 0.26}
+        x={width * 0.15}
+        y={height * 0.93}
+        color={blue}
+        fontSize={width * 0.014}
+        fontColor={white}
+        text={"PREVIOUS"}
+        fontWeight={800}
+        callback={totalPages <= 1 || currentPage === 0 ? null : prevPage}
+        alpha={totalPages <= 1 || currentPage === 0 ? 0.3 : 1}
+      />
 
-        <RectButton
-          height={height * 0.13}
-          width={width * 0.26}
-          x={width * 0.56}
-          y={height * 0.93}
-          color={blue}
-          fontSize={width * 0.014}
-          fontColor={white}
-          text={"NEXT"}
-          fontWeight={800}
-          callback={nextPage}
-          alpha={totalPages === 1 || currentPage === totalPages ? 0.3 : 1}
-        />
-      </>
-    )}
-
+      <RectButton
+        height={height * 0.13}
+        width={width * 0.26}
+        x={width * 0.56}
+        y={height * 0.93}
+        color={blue}
+        fontSize={width * 0.014}
+        fontColor={white}
+        text={"NEXT"}
+        fontWeight={800}
+        callback={totalPages <= 1 || currentPage === totalPages - 1 ? null : nextPage}
+        alpha={totalPages <= 1 || currentPage === totalPages - 1 ? 0.3 : 1}
+      />
 
       <RectButton
         height={height * 0.13}
@@ -225,32 +232,33 @@ const CurricularSelectModule = (props) => {
         fontWeight={800}
         callback={() => {
           Curriculum.setCurrentUUID(null);
+          setSelectedCurricular(null);
           mainCallback();
         }}
       />
+
       <RectButton
         height={height * 0.13}
         width={width * 0.26}
         x={width * 0.68}
         y={height * 0.93}
         color={green}
-        alpha={Curriculum.getCurrentUUID() ? 1 : 0.3}
+        alpha={selectedCurricular ? 1 : 0.3}
         fontSize={width * 0.014}
         fontColor={white}
         text="OK"
         fontWeight={800}
         callback={
-          Curriculum.getCurrentUUID() 
-            ? curricularCallback 
+          selectedCurricular 
+            ? () => handleGameClicked(selectedCurricular, curricularCallback)
             : null
         }
       />
 
       <CurricularSelectorBoxes height={height} width={width} />
-      {drawCurricularList(0.15, 0.3, 0.018, width, height, mainCallback, curricularCallback)}
+      {drawCurricularList(0.15, 0.3, 0.018, width, height)}
     </>
   );
 };
 
-
-export default CurricularSelectModule; 
+export default CurricularSelectModule;
