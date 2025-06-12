@@ -143,8 +143,8 @@ export const PINBox = (props) => {
   let displayText;
   let fontColor;
 
-  if (!getEditLevel() && pinValue) {
-    // In preview mode with a PIN set, show asterisks
+  if (!getEditLevel()) {
+    // In preview mode, always show asterisks
     displayText = '****';
     fontColor = black;
   } else if (pinValue) {

@@ -18,7 +18,7 @@ export function getEditLevel(){
   return editLevel;
 }
 
-let goBack = "MAIN";
+let goBack = "MAIN"; // TODO: add more states; reference playMenu.js
 export function setGoBackFromLevelEdit(previous){
   goBack = previous;
 }
@@ -73,6 +73,11 @@ function setLocalStorage(){
 
   // 1. Text-box values
   keysToPush.forEach((k) => {
+    if (k === 'PIN' && !getEditLevel()) {
+      localStorage.removeItem(k); // Make sure PIN is not in localStorage during preview
+      return;
+    }
+
     const val = conj['Text Boxes']?.[k];
     if (val !== undefined && val !== null && val !== '') {
       localStorage.setItem(k, val);
