@@ -139,6 +139,24 @@ export const PINBox = (props) => {
     setPinValue(newPin);                         // ← triggers rerender, no flicker
   }
 
+  // Determine what text to display
+  let displayText;
+  let fontColor;
+
+  if (!getEditLevel() && pinValue) {
+    // In preview mode with a PIN set, show asterisks
+    displayText = '****';
+    fontColor = black;
+  } else if (pinValue) {
+    // In edit mode with a PIN set, show the actual PIN
+    displayText = pinValue;
+    fontColor = black;
+  } else {
+    // No PIN set, show placeholder
+    displayText = '4-digit PIN';
+    fontColor = '#888';
+  }
+
   return (
       <>
       {/* PINBox InputBox */}
@@ -149,8 +167,8 @@ export const PINBox = (props) => {
         y={height * 0.085}
         color={white}
         fontSize={width * 0.013}
-        text={pinValue || '4-digit PIN'}
-        fontColor={pinValue ? black : '#888'}
+        text={displayText}
+        fontColor={fontColor}
         fontWeight={300}
         callback={pinBoxInput} // Create Popup
       />
