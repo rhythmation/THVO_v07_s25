@@ -110,7 +110,9 @@ const ConjectureModule = (props) => {
   const [state, send] = useMachine(ConjectureEditorMachine);
   const [isSaved, setIsSaved] = useState(false);
   
-  useEffect(() => { setLocalStorage(); }, []);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setLocalStorage();setLoaded(true); }, []);
+  if (!loaded) return null;
 
   return (
     <>
