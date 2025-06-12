@@ -89,6 +89,7 @@ export const Curriculum = {
 const StoryEditorModule = (props) => {
   const { height, width, mainCallback, gameUUID, curricularCallback, conjectureSelectCallback, conjectureCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Stores dialogues
   const [dialogues, setDialogues] = useState([]);
@@ -123,6 +124,24 @@ const StoryEditorModule = (props) => {
       }
     });
   }, []);
+
+
+  const dialoguesPerPage = 7;
+  const totalPages = Math.ceil(dialogues.length / dialoguesPerPage);
+
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const startIndex = currentPage * dialoguesPerPage;
+  const currentDialogues = dialogues.slice(startIndex, startIndex + dialoguesPerPage);
 
   //Change Chapter
   const handleChangeChapter = (dialogueIndex, newChapterName) => {
@@ -267,7 +286,7 @@ const StoryEditorModule = (props) => {
           <Background height={height * 1.1} width={width} />
 
           {/* Render StoryEditorContentEditor */}
-          <StoryEditorContentEditor height={height} width={width} dialogues={dialogues} onAddDialogue={handleAddDialogue} onMoveUp={handleMoveup} 
+          <StoryEditorContentEditor height={height} width={width} dialogues={currentDialogues} onAddDialogue={handleAddDialogue} onMoveUp={handleMoveup} 
                                     onRemoveDialogue={handleRemoveDialogue} onEditDialogue={handleEditDialogue} onChangeType={handleChangeType}
                                     onMoveDown={handleMoveDown} idToSprite={idToSprite} onChangeCharacter={handleChangeCharacter} chapters={chapters}
                                     onChangeChapter={handleChangeChapter} />
@@ -331,8 +350,8 @@ const StoryEditorModule = (props) => {
             fontColor={white}
             text={"PREVIOUS"}
             fontWeight={800}
-            callback={null}//{totalPages <= 1 || currentPage === 0 ? null : prevPage}
-            //alpha={totalPages <= 1 || currentPage === 0 ? 0.3 : 1}
+            callback={totalPages <= 1 || currentPage === 0 ? null : prevPage}
+            alpha={totalPages <= 1 || currentPage === 0 ? 0.3 : 1}
           />
 
           <RectButton
@@ -345,8 +364,8 @@ const StoryEditorModule = (props) => {
             fontColor={white}
             text={"NEXT"}
             fontWeight={800}
-            callback={null}//{totalPages <= 1 || currentPage === totalPages - 1 ? null : nextPage}
-            //alpha={totalPages <= 1 || currentPage === totalPages - 1 ? 0.3 : 1}
+            callback={totalPages <= 1 || currentPage === totalPages - 1 ? null : nextPage}
+            alpha={totalPages <= 1 || currentPage === totalPages - 1 ? 0.3 : 1}
           />
         </>
       )}
