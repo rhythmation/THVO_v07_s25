@@ -10,10 +10,8 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import PlayMenu from "./PlayMenu/PlayMenu.js";
 import { getUserRoleFromDatabase, getUserNameFromDatabase } from "../firebase/userDatabase";
-import { Camera } from "@mediapipe/camera_utils";
-import { Holistic } from "@mediapipe/holistic/holistic";
-import { enrichLandmarks } from "./Pose/landmark_utilities";
 
+// Layout constants
 const [
   numRows,
   numColumns,
@@ -30,7 +28,6 @@ const Story = () => {
   const [userName, setUserName] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [poseData, setPoseData] = useState({});
 
   let [rowDimensions, columnDimensions] = generateRowAndColumnFunctions(
     width,
@@ -81,13 +78,14 @@ const Story = () => {
     fetchUserData();
   }, [isAuthenticated]);
 
-    useEffect(() => {
-    window.addEventListener("resize", () => {
+  // Handle window resize to update dimensions
+  useEffect(() => {
+    const handleResize = () => {
       setHeight(window.innerHeight);
       setWidth(window.innerWidth);
       [rowDimensions, columnDimensions] = generateRowAndColumnFunctions(
-        width,
-        height,
+        window.innerWidth,
+        window.innerHeight,
         numRows,
         numColumns,
         marginBetweenRows,
@@ -95,38 +93,10 @@ const Story = () => {
         columnGutter,
         rowGutter
       );
-    });
-    const holistic = new Holistic({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`;
-      },
-    });
-    holistic.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: true,
-      smoothSegmentation: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-      selfieMode: true,
-      refineFaceLandmarks: true,
-    });
-    async function poseDetectionFrame() {
-      await holistic.send({ image: videoElement });
-    }
-
-    const videoElement = document.getElementsByClassName("input-video")[0];
-    let camera = new Camera(videoElement, {
-      onFrame: poseDetectionFrame,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      facingMode: "environment",
-    });
-    camera.start();
-    const updatePoseResults = (newResults) => {
-      setPoseData(enrichLandmarks(newResults));
     };
-    holistic.onResults(updatePoseResults);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Gate for moving to "ready" state
@@ -146,45 +116,43 @@ const Story = () => {
     !isAuthenticated || !userName || userName === "USER NOT FOUND" || !userRole;
 
   return (
-  <>
-    {loading ? (
-      <Loader />
-    ) : (
-      <Stage
-        height={height}
-        width={width}
-        options={{
-          antialias: true,
-          autoDensity: true,
-          backgroundColor: yellow,
-        }}
-      >
-        {state.value === "ready" && (
-          <Home
-            width={width}
-            height={height}
-            startCallback={() => send("TOGGLE")}
-            logoutCallback={() => firebase.auth().signOut()}
-            userName={userName}
-          />
-        )}
+    <>
+      {loading ? (
+        <Loader />
+      ) : (
+        <Stage
+          height={height}
+          width={width}
+          options={{
+            antialias: true,
+            autoDensity: true,
+            backgroundColor: yellow,
+          }}
+        >
+          {state.value === "ready" && (
+            <Home
+              width={width}
+              height={height}
+              startCallback={() => send("TOGGLE")}
+              logoutCallback={() => firebase.auth().signOut()}
+              userName={userName}
+            />
+          )}
 
-        {state.value === "main" && (
-          <PlayMenu
-            width={width}
-            height={height}
-            poseData={poseData}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            role={userRole}
-            logoutCallback={() => firebase.auth().signOut()}
-          />
-        )}
-      </Stage>
-    )}
-  </>
-);
-
+          {state.value === "main" && (
+            <PlayMenu
+              width={width}
+              height={height}
+              columnDimensions={columnDimensions}
+              rowDimensions={rowDimensions}
+              role={userRole}
+              logoutCallback={() => firebase.auth().signOut()}
+            />
+          )}
+        </Stage>
+      )}
+    </>
+  );
 };
 
 export default Story;

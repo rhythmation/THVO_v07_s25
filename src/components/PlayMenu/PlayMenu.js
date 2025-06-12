@@ -21,7 +21,7 @@ import PoseTest from "../ConjectureModule/PoseTest";
 import DataMenu from "./DataMenu.js";
 
 const PlayMenu = (props) => {
-    const {width, height, poseData, columnDimensions, rowDimensions, role, logoutCallback} = props;
+    const {width, height, columnDimensions, rowDimensions, role, logoutCallback} = props;
     const [buttonList, setButtonList] = useState([]);
     const [distanceBetweenButtons, setDistanceBetweenButtons] = useState();
     const [startingX, setStartingX] = useState();
@@ -128,7 +128,6 @@ const PlayMenu = (props) => {
           <PoseTest
             width={width}
             height={height}
-            poseData={poseData}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
             conjectureCallback={() => send("NEWLEVEL")}
@@ -150,7 +149,6 @@ const PlayMenu = (props) => {
             <PoseAuthoring
             width={width}
             height={height}
-            poseData={poseData}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
             conjectureCallback={() => send("NEWLEVEL")}  // goes to the Conjecture Module
@@ -164,7 +162,6 @@ const PlayMenu = (props) => {
                 backCallback={()=> send("MAIN")}
                 columnDimensions={columnDimensions}
                 rowDimensions={rowDimensions}
-                poseData={poseData}
                 gameUUID={Curriculum.getCurrentUUID()}
             /> 
         )}

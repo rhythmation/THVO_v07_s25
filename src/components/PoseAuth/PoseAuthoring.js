@@ -9,6 +9,7 @@ import { PoseAuthMachine } from "../../machines/poseauthMachine";
 import { capturePose, saveConjecture, resetConjecture } from "./ButtonFunctions";
 import { calculateFaceDepth } from "../Pose/landmark_utilities";
 import { Text, Graphics } from '@inlet/react-pixi';
+import usePoseData from "../utilities/PoseData";
 
 // Defining a NotificationBox component using Pixi components, used for all notification pop-ups
 const NotificationBox = ({ message, textSize }) => {
@@ -27,7 +28,8 @@ const NotificationBox = ({ message, textSize }) => {
 };
 
 const PoseAuthoring = (props) => {
-    const { height, width, poseData, columnDimensions, rowDimensions, conjectureCallback } = props;
+    const { height, width, columnDimensions, rowDimensions, conjectureCallback } = props;
+    const poseData = usePoseData();
     const playerColumn = props.columnDimensions(3);
     const [poseSimilarity, setPoseSimilarity] = useState([]);
     const [state, send] = useMachine(PoseAuthMachine);
@@ -92,7 +94,7 @@ const PoseAuthoring = (props) => {
     const handleCapture = () => {
       setNotificationMessage("Captured pose.");
       setBoxVisible(true);
-      capturePose(props.poseData, state.value); // Implement Pose-Capturing
+      capturePose(poseData, state.value); // Implement Pose-Capturing
       setTimeout(() => setBoxVisible(false), 1000);
     };
 
@@ -178,8 +180,8 @@ const PoseAuthoring = (props) => {
 
     // UseEffect to monitor facedepth and determine wether the user is too close to the screen
     useEffect(() => {
-      if (props.poseData && props.poseData.poseLandmarks) {
-        const depth = calculateFaceDepth(props.poseData.poseLandmarks);
+      if (poseData && poseData.poseLandmarks) {
+        const depth = calculateFaceDepth(poseData.poseLandmarks);
         // console.log lets you see the depth in your browsers console; ctrl + shift + i
         // console.log(depth)
         if (depth < -2) { // You can change the negative integer lower for closer range
@@ -190,7 +192,7 @@ const PoseAuthoring = (props) => {
           }, 1000)
         }
       }
-    }, [props.poseData])
+    }, [poseData])
 
     // UseEffect to capture pose data when the flag is set and poseData changes
     useEffect(() => {
@@ -198,7 +200,7 @@ const PoseAuthoring = (props) => {
         handleCapture();
         setShouldCapture(false); // Reset the flag after capturing
       }
-    }, [props.poseData, shouldCapture]); // Only re-run if props.poseData or shouldCapture changes
+    }, [poseData, shouldCapture]); // Only re-run if poseData or shouldCapture changes
 
     // *********************************
     // Returned objects
@@ -291,7 +293,7 @@ const PoseAuthoring = (props) => {
         />
         {/* Active user pose build */}
         <Pose
-          poseData={props.poseData}
+          poseData={poseData}
           colAttr={{
             x: (mainBoxX + (mainBoxWidth - (mainBoxWidth * 0.8)) / 1.75),
             y: (mainBoxY + (mainBoxHeight - (mainBoxHeight * 0.8)) / 1.75),

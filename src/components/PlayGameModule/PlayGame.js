@@ -5,6 +5,7 @@ import { useMachine } from "@xstate/react";
 import { useEffect, useState } from "react";
 import LevelPlay from "../LevelPlayModule/LevelPlay";
 import { Curriculum } from "../CurricularModule/CurricularModule";
+import usePoseData from "../utilities/PoseData";
 
 const PlayGame = (props) => {
   const [shownIntros, setShownIntros] = useState(new Set());
@@ -13,7 +14,8 @@ const PlayGame = (props) => {
   };
   const hasShownIntro = (chapterIdx) => shownIntros.has(chapterIdx);
 
-  const { columnDimensions, rowDimensions, poseData, height, width, backCallback } = props;
+  const { columnDimensions, rowDimensions, height, width, backCallback } = props;
+  const poseData = usePoseData();
 
   const uuidsList = Curriculum.getCurrentConjectures();
 
