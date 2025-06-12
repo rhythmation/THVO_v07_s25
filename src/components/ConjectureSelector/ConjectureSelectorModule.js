@@ -20,7 +20,7 @@ export function setAddtoCurricular(trueOrFalse) {
 }
 
 export function handlePIN(conjecture, message = "Please Enter the PIN."){ // this function is meant to be used as an if statement (ex: if(handlePIN){...} )
-  const existingPIN = conjecture["PIN"];
+  const existingPIN = conjecture["Text Boxes"]?.["PIN"] || conjecture["PIN"];
   if(existingPIN == "" || existingPIN == "undefined" || existingPIN == null){ // no existing PIN
     return true;
   }
