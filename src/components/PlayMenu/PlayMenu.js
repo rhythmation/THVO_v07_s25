@@ -241,6 +241,7 @@ const PlayMenu = (props) => {
             height={height}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
+            userRole={userRole}
             curricularCallback={() => {
               if (!getPlayGame()) // edit game
                 send("NEWGAME");

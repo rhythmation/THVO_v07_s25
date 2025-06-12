@@ -58,9 +58,8 @@ function handleGameClicked(curricular, curricularCallback) {
 
 const CurricularSelectModule = (props) => {
   
-  const { height, width, mainCallback, curricularCallback } = props;
+  const { height, width, mainCallback, curricularCallback, userRole } = props;
   const [curricularList, setCurricularList] = useState([]);
-  const [userRole, setUserRole] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedCurricular, setSelectedCurricular] = useState(null);
 
@@ -69,8 +68,6 @@ const CurricularSelectModule = (props) => {
       try {
         const result = await getCurricularList(getPlayGame());
         setCurricularList(result);
-        const role = await getUserRoleFromDatabase();
-        setUserRole(role);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
