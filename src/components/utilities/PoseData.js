@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Camera } from "@mediapipe/camera_utils";
 import { Holistic } from "@mediapipe/holistic/holistic";
 import { enrichLandmarks } from "../Pose/landmark_utilities";
 
 const usePoseData = () => {
   const [poseData, setPoseData] = useState({});
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const videoElement = document.getElementsByClassName("input-video")[0];
@@ -29,7 +30,9 @@ const usePoseData = () => {
     });
 
     const poseDetectionFrame = async () => {
-      await holistic.send({ image: videoElement });
+      if (isMountedRef.current) {
+        await holistic.send({ image: videoElement });
+      }
     };
 
     const camera = new Camera(videoElement, {
@@ -40,14 +43,28 @@ const usePoseData = () => {
     });
 
     holistic.onResults((results) => {
-      setPoseData(enrichLandmarks(results));
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setPoseData(enrichLandmarks(results));
+      }
     });
 
     camera.start();
 
     return () => {
+      // Mark component as unmounted
+      isMountedRef.current = false;
+      
+      // Clean up resources
       camera.stop();
       holistic.close && holistic.close();
+    };
+  }, []);
+
+  // Clean up the ref when component unmounts
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
     };
   }, []);
 
