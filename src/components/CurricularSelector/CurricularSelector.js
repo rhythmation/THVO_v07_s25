@@ -36,25 +36,33 @@ export function handlePIN(curricular, message = "Please Enter the PIN.") { // th
   return false; // do nothing if cancel is clicked
 }
 
-function handleGameClicked(curricular, curricularCallback) {
+async function handleGameClicked(curricular, curricularCallback, setLoading) {
   if (Curriculum.getCurrentUUID() === curricular["UUID"]) {
     Curriculum.setCurrentUUID(null);
     return;
   }
 
-  if (playGame) { // don't need a PIN to play the game
-    // write in a new session of the game to firebase
-    Curriculum.setCurrentUUID(curricular["UUID"]);
-    Curriculum.setCurricularEditor(curricular);
+  setLoading(true); // start loading
+
+  try {
+    if (playGame) {
+      Curriculum.setCurrentUUID(curricular["UUID"]);
+      await Curriculum.setCurricularEditor(curricular);
+    } else if (handlePIN(curricular) && !playGame) {
+      console.log("Attempting to edit game");
+      Curriculum.setCurrentUUID(curricular["UUID"]);
+      await Curriculum.setCurricularEditor(curricular);
+    }
+
+    setLoading(false); // stop loading before callback
+    console.log("Levels fetched, redirecting!");
     curricularCallback();
-  }
-  else if (handlePIN(curricular) && !playGame) {
-    console.log("Attempting to edit game");
-    Curriculum.setCurrentUUID(curricular["UUID"]);
-    Curriculum.setCurricularEditor(curricular);
-    curricularCallback();
+  } catch (error) {
+    console.error("Error in handleGameClicked:", error);
+    setLoading(false); // make sure loading is turned off on error
   }
 }
+
 
 const CurricularSelectModule = (props) => {
   
@@ -62,6 +70,7 @@ const CurricularSelectModule = (props) => {
   const [curricularList, setCurricularList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedCurricular, setSelectedCurricular] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -247,7 +256,7 @@ const CurricularSelectModule = (props) => {
         fontWeight={800}
         callback={
           selectedCurricular 
-            ? () => handleGameClicked(selectedCurricular, curricularCallback)
+            ? () => handleGameClicked(selectedCurricular, curricularCallback, setLoading)
             : null
         }
       />
