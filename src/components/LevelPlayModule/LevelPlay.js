@@ -6,7 +6,7 @@ import ConjecturePoseContainter from "../ConjecturePoseMatch/ConjecturePoseConta
 import VideoRecorder from "../VideoRecorder";
 import { getConjectureDataByUUID, writeToDatabaseIntuitionStart, writeToDatabaseIntuitionEnd } from "../../firebase/database";
 import Chapter from "../Chapter";
-
+import Tween from "../Tween";
 
 
 const LevelPlay = (props) => {
@@ -150,6 +150,17 @@ useEffect(() => {
           isOutro={false}
       />
     )}
+    {/* {state.value === "tween" && poses != null && (
+      <Tween
+        poses={poses}
+        duration={2000}
+        width={width}
+        height={height}
+        loop={false}
+        // callback when tween finishes
+        onComplete={() => send("NEXT")}
+      />
+    )} */}
       {state.value === "poseMatching" && poses != null && (
         <>
           <ConjecturePoseContainter
