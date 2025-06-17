@@ -14,7 +14,7 @@ const PlayGame = (props) => {
   };
   const hasShownIntro = (chapterIdx) => shownIntros.has(chapterIdx);
 
-  const { columnDimensions, rowDimensions, height, width, backCallback } = props;
+  const { columnDimensions, rowDimensions, height, width, backCallback, gameUUID} = props;
   const poseData = usePoseData();
 
   const uuidsList = Curriculum.getCurrentConjectures();
@@ -39,6 +39,7 @@ const PlayGame = (props) => {
           needBack={false}
           hasShownIntro={hasShownIntro}
           markIntroShown={markIntroShown}
+          gameID={gameUUID}
         />
       )}
 
