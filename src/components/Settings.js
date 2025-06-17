@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { Container, Graphics, Text } from "@inlet/react-pixi";
 import RectButton from "./RectButton";
+import SettingRow from "./SettingRow";
+
 
 
 const Settings = ({ width, height, x, y, onClose }) => {
@@ -101,17 +103,14 @@ const Settings = ({ width, height, x, y, onClose }) => {
       {/* Left Column Settings */}
        {/* Audio part  */}
       <Text text={"Audio"} style={{ fontSize: 12, fill: "black" }} x={20} y={40} />
-      <Text text={"Sound:"} style={{ fontSize: 20, fill: "black" }} x={20} y={50} />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={60}
-        text={settings.sound ? "ON" : "OFF"}
-        color={settings.sound ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("sound")}
-      />
+      <SettingRow
+    label="Sound:"
+    value={settings.sound}
+    x={20}
+    y={50}
+    onToggle={() => toggleSetting("sound")}
+  />
+
 
       <Text text={"Music:"} style={{ fontSize: 20, fill: "black" }} x={20} y={70} />
       <RectButton
