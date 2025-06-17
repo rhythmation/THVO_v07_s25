@@ -122,7 +122,7 @@ useEffect(() => {
       phase={state.value} 
       // CurricularID and gameID not functional at this moment 
       curricularID={UUID} // This is working correctly now!
-      gameID={conjectureData?.[UUID]?.GameID} // This is not working
+      gameID={gameID} // This is not working
     />
     
     {/* ✅ Debug: Checking if intro should show */}
