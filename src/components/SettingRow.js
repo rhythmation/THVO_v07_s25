@@ -25,3 +25,4 @@ export default function SettingRow({ label, value, x, y, onToggle }) {
     </Container>
   );
 }
+ 

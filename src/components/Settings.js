@@ -380,18 +380,18 @@ const Settings = ({ width, height, x, y, onClose }) => {
         callback={() => toggleSetting("textToSpeech")}
       />
 
-      {/* Close Button */}
       <RectButton
-        width={130}
-        height={40}
-        x={width / 2 - 50}
-        y={height - 30 - 20}
-        text={"CLOSE"}
-        fontColor={"red"}
+        width={160}
+        height={48}
+        x={width / 2 - 80}
+        y={height - 60}
+        text="CLOSE"
+        color="red"          
+        fontColor="white"
+        fontWeight="bold"
         callback={onClose}
-        fontWeight = {"bold"}
-   
       />
+
     </Container>
   );
 };
