@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { Container, Graphics, Text } from "@inlet/react-pixi";
 import RectButton from "./RectButton";
 
+
 const Settings = ({ width, height, x, y, onClose }) => {
   // State to manage all settings
   const [settings, setSettings] = useState({
@@ -53,6 +54,27 @@ const Settings = ({ width, height, x, y, onClose }) => {
       g.beginFill(0xffffe0); // Light yellow background
       g.drawRect(0, 0, width, height);
       g.endFill();
+      // Card metrics
+      const margin      = 20;
+      const cardWidth   = width  - margin * 2;
+      const cardHeight  = height - margin * 2;      
+      const radius      = 12;
+
+      g.beginFill(0x000000, 0.15);
+      g.drawRoundedRect(
+        margin + 4,       // x offset
+        margin + 4,       // y offset
+        cardWidth,        // same size
+        cardHeight,
+        radius
+      );
+     g.endFill();
+
+      // 2) draw the ivory card on top
+      g.beginFill(0xfffffa);
+      g.drawRoundedRect(margin, margin, cardWidth, cardHeight, radius);
+      g.endFill();
+
     },
     [width, height]
   );
@@ -72,7 +94,7 @@ const Settings = ({ width, height, x, y, onClose }) => {
           fill: "blue",
         }}
         x={width / 2}
-        y={20}
+        y={40}
         anchor={0.5}
       />
 
@@ -364,7 +386,7 @@ const Settings = ({ width, height, x, y, onClose }) => {
         width={130}
         height={40}
         x={width / 2 - 50}
-        y={height - 30}
+        y={height - 30 - 20}
         text={"CLOSE"}
         fontColor={"red"}
         callback={onClose}
