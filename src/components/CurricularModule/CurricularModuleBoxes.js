@@ -50,14 +50,41 @@ function handleLevelClicked(conjecture, conjectureCallback){
 }
 
 // Function to create input boxes for curricular content
-function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, callback) {
-  const text = localStorage.getItem(textKey)?.slice(0, charLimit) +
-               (localStorage.getItem(textKey)?.length > charLimit ? '...' : '');
+function createInputBox(
+  charLimit,
+  scaleFactor,
+  widthMultiplier,
+  xMultiplier,
+  yMultiplier,
+  textKey,
+  totalWidth,
+  totalHeight,
+  callback
+) {
 
+  const raw = localStorage.getItem(textKey);
+  const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
+  const isPlaceholder = !value;
+
+  
+  const placeholderMap = {
+    CurricularName:     'Enter game name…',
+    CurricularAuthor:   'Author',
+    CurricularKeywords: 'keyword1, keyword2',
+    CurricularPIN:      '4-digit PIN',
+  };
+
+  const text = value
+    ? value.length > charLimit
+        ? value.slice(0, charLimit) + '…'
+        : value
+    : placeholderMap[textKey] ?? '';
+
+  /* -------------------------------------------------------------- */
   const height = totalHeight * scaleFactor;
-  const width = totalWidth * widthMultiplier;
-  const x = totalWidth * xMultiplier;
-  const y = totalHeight * yMultiplier;
+  const width  = totalWidth * widthMultiplier;
+  const x      = totalWidth * xMultiplier;
+  const y      = totalHeight * yMultiplier;
 
   return (
     <InputBox
@@ -68,7 +95,7 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
       y={y}
       color={white}
       fontSize={totalWidth * 0.012}
-      fontColor={black}
+      fontColor={isPlaceholder ? '#888' : black}
       text={text}
       fontWeight={500}
       outlineColor={black}
