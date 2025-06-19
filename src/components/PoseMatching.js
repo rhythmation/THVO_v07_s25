@@ -14,7 +14,7 @@ import { uniqueId } from "xstate/lib/utils.js";
 let poseNumber = 1;
 
 const PoseMatching = (props) => {
-  const { posesToMatch, columnDimensions, onComplete, UUID } = props;
+  const { posesToMatch, columnDimensions, onComplete, UUID, gameID } = props;
   
   const poseNumberStr = "Pose";
   const context = posesToMatch.map((x) => {    
@@ -50,7 +50,7 @@ const PoseMatching = (props) => {
     // Length of poses is greater than 0 and not transitioning
     if (poses.length > 0 && !transition) {
       console.log("Pose is starting...");
-      writeToDatabasePoseStart(poseNumberStr + " " + poseNumber, UUID);
+      writeToDatabasePoseStart(poseNumberStr + " " + poseNumber, UUID, gameID);
       if (firstPose) {
         setFirstPose(false);
       }
@@ -134,7 +134,7 @@ const PoseMatching = (props) => {
       );
       if (similarityScore) {
         // write the match to the database
-        writeToDatabasePoseMatch(poseNumberStr + " " + poseNumber);
+        writeToDatabasePoseMatch(poseNumberStr + " " + poseNumber, gameID);
         poseNumber++;
         // move to next state and reset pose similarity
         if (poses.length === 0 && !firstPose) {

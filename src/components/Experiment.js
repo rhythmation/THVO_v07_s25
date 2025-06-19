@@ -88,6 +88,7 @@ const Experiment = (props) => {
             ].flat()}
             columnDimensions={columnDimensions}
             onComplete={() => send("NEXT")}
+            gameID={gameID}
           />
         </>
       )}

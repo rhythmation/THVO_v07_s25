@@ -7,7 +7,7 @@ import { send } from "xstate";
 import usePoseData from "../utilities/PoseData";
 
 const PoseTest = (props) => {
-    const { height, width, columnDimensions, rowDimensions, editCallback, conjectureCallback,UUID } = props;
+    const { height, width, columnDimensions, rowDimensions, editCallback, conjectureCallback, UUID, gameID } = props;
     const poseData = usePoseData();
 
     // Use background and then initiate PoseTestMatch
@@ -21,6 +21,7 @@ const PoseTest = (props) => {
             rowDimensions={rowDimensions}
             conjectureCallback={conjectureCallback}
             poseData = {poseData}
+            gameID={gameID}
         />
     </>
     );

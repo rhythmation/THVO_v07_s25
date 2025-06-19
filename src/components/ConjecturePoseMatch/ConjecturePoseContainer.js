@@ -92,6 +92,7 @@ const ConjecturePoseContainer = (props) => {
             UUID={UUID}
             onCompleteCallback={onCompleteCallback}
             needBack={needBack}
+            gameID={gameID}
         />
     </>
     );

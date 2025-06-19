@@ -131,6 +131,7 @@ const PlayMenu = (props) => {
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
             conjectureCallback={() => send("NEWLEVEL")}
+            gameID={Curriculum.getCurrentUUID()}
           />
         )}
         {state.value === "newLevel" && ( //if the state is newLevel, show the Conjecture Module

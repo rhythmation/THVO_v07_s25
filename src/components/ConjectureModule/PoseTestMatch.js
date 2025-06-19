@@ -13,7 +13,7 @@ import  PoseMatching  from "../PoseMatching";
 
 
 const PoseTestMatch = (props) => {
-  const { height, width, columnDimensions, conjectureCallback, poseData} = props;
+  const { height, width, columnDimensions, conjectureCallback, poseData, gameID} = props;
   const [poses, setPoses] = useState(null);
 
   // Background for Pose Matching
@@ -63,6 +63,7 @@ return(
           ].flat()}
           columnDimensions={columnDimensions}
           onComplete={conjectureCallback}
+          gameID={gameID}
         />
         {/* Back Button */}
         <RectButton
