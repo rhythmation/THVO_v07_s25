@@ -78,7 +78,7 @@ export const curricularTextBoxes = [
 ]
 
 // Export a function named writeToDatabase, allows constant pose data upload
-export const writeToDatabase = async (poseData, UUID, frameRate) => {
+export const writeToDatabase = async (poseData, UUID, frameRate, gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -825,7 +825,7 @@ export const writeToDatabaseNewSession = async (CurrId, CurrName, role) => {
 };
 
 // Write timestamp for pose start to the database
-export const writeToDatabasePoseStart = async (poseNumber, ConjectureId) => {
+export const writeToDatabasePoseStart = async (poseNumber, ConjectureId, gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -849,7 +849,7 @@ export const writeToDatabasePoseStart = async (poseNumber, ConjectureId) => {
 };
 
 // Writes a pose match into the database. Separated for simplicity
-export const writeToDatabasePoseMatch = async (poseNumber) => {
+export const writeToDatabasePoseMatch = async (poseNumber, gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -869,7 +869,7 @@ export const writeToDatabasePoseMatch = async (poseNumber) => {
 };
 
 // Write in the start of the truefalse phase
-export const writeToDatabaseIntuitionStart = async () => {
+export const writeToDatabaseIntuitionStart = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -892,7 +892,7 @@ export const writeToDatabaseIntuitionStart = async () => {
 };
 
 // Write in the end of the truefalse phase. 
-export const writeToDatabaseIntuitionEnd = async () => {
+export const writeToDatabaseIntuitionEnd = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -915,7 +915,7 @@ export const writeToDatabaseIntuitionEnd = async () => {
 };
 
 // Write in the second part of the true false phase
-export const writeToDatabaseInsightStart = async () => {
+export const writeToDatabaseInsightStart = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -935,7 +935,7 @@ export const writeToDatabaseInsightStart = async () => {
 };
 
 // Write in the end of the second part of the true false phase
-export const writeToDatabaseInsightEnd = async () => {
+export const writeToDatabaseInsightEnd = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();

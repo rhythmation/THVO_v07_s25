@@ -173,6 +173,7 @@ useEffect(() => {
             UUID={UUID}
             onCompleteCallback={() => {send("NEXT")}}
             poses={poses}
+            gameID={gameID}
           />
         </>
       )}
@@ -187,6 +188,7 @@ useEffect(() => {
           rowDimensions={rowDimensions}
           onComplete={() => send("NEXT")}
           cursorTimer={debugMode ? 1000 : 10000}
+          gameID={gameID}
         /> )}
         {state.value === "insight" && (
         <ExperimentalTask
@@ -197,6 +199,7 @@ useEffect(() => {
           rowDimensions={rowDimensions}
           onComplete={() => send("NEXT")}
           cursorTimer={debugMode ? 1000 : 5000} //moved insight phase to 5 seconds for testing
+          gameID={gameID}
         />
       )}
       {state.value === "outroDialogue" && conjectureData && conjectureData[UUID] && (

@@ -18,7 +18,8 @@ const ConjecturePoseContainer = (props) => {
         mainCallback,
         poseData,
         UUID,
-        onCompleteCallback 
+        onCompleteCallback,
+        gameID
     } = props;
 
     const drawModalBackground = useCallback((g) => {
@@ -56,7 +57,7 @@ const ConjecturePoseContainer = (props) => {
             // Call the writeToDatabase function with the current poseData, conjecture index,
             // and fps parameter. Push the resulting promise object to the promises array.
             promises.push(
-              writeToDatabase(poseData, UUID, frameRate)
+              writeToDatabase(poseData, UUID, frameRate, gameID)
             );
             // Call the promiseChecker function to detect any data loss in the promises array
             // and trigger an alert if necessary.

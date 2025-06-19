@@ -16,7 +16,8 @@ const Experiment = (props) => {
     onComplete,
     debugMode,
     conjectureData,
-    currentConjectureIdx
+    currentConjectureIdx,
+    gameID
   } = props;
   const [state, send, service] = useMachine(ExperimentMachine);
   const [experimentText, setExperimentText] = useState(
@@ -99,6 +100,7 @@ const Experiment = (props) => {
           onComplete={() => send("NEXT")}
           cursorTimer={debugMode ? 1_000 : 10_000}
           currentConjectureIdx={currentConjectureIdx}
+          gameID={gameID}
         />
       )}
       {state.value === "insight" && (
@@ -110,6 +112,7 @@ const Experiment = (props) => {
           onComplete={onComplete}
           cursorTimer={debugMode ? 1_000 : 30_000}
           currentConjectureIdx={currentConjectureIdx}
+          gameID={gameID}
         />
       )}
     </>
