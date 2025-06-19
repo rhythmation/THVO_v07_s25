@@ -825,7 +825,7 @@ export const writeToDatabaseNewSession = async (CurrId, CurrName, role) => {
 };
 
 // Write timestamp for pose start to the database
-export const writeToDatabasePoseStart = async (poseNumber, ConjectureId, gameID) => {
+export const writeToDatabasePoseStart = async (poseNumber, ConjectureId, gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
