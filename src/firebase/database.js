@@ -869,7 +869,7 @@ export const writeToDatabasePoseMatch = async (poseNumber, gameId) => {
 };
 
 // Write in the start of the truefalse phase
-export const writeToDatabaseIntuitionStart = async (gameId = undefined) => {
+export const writeToDatabaseIntuitionStart = async (gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -892,7 +892,7 @@ export const writeToDatabaseIntuitionStart = async (gameId = undefined) => {
 };
 
 // Write in the end of the truefalse phase. 
-export const writeToDatabaseIntuitionEnd = async (gameId = undefined) => {
+export const writeToDatabaseIntuitionEnd = async (gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();

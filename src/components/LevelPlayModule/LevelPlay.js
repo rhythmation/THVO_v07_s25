@@ -106,13 +106,13 @@ useEffect(() => {
       setExperimentText(
         `Read the following ALOUD:\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n Answer: TRUE or FALSE?`
       );
-      writeToDatabaseIntuitionStart();
+      writeToDatabaseIntuitionStart(gameID);
     // Insight is explaining why
     } else if (state.value === "insight") {
       setExperimentText(
         `Alright! Explain WHY :\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n is TRUE or FALSE?`
       );
-      writeToDatabaseIntuitionEnd();
+      writeToDatabaseIntuitionEnd(gameID);
     }
   }, [state.value]);
 
