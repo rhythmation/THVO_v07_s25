@@ -322,6 +322,81 @@ export const writeToDatabaseConjectureDraft = async (existingUUID) => {
   return promises && alert("Draft saved");
 };
 
+
+export const deleteFromDatabaseConjecture = async (existingUUID) => {
+  if (!existingUUID) {
+    return alert("No level ID provided for deletion.");
+  }
+  
+  try {
+    // First, remove the level from any curricular games that reference it
+    await removeLevelFromCurricularGames(existingUUID);
+    
+    // Then, remove the level itself from the database
+    const conjecturePath = `Level/${existingUUID}`;
+    const dbRef = ref(db, conjecturePath);
+    
+    // Remove the entire level from database
+    await remove(dbRef);
+
+    return alert("Level deleted successfully and removed from all games.");
+  } catch (error) {
+    console.error('Error deleting level:', error);
+    return alert("Error deleting level. Please try again.");
+  }
+};
+
+// Helper function to remove a level from all curricular games that reference it
+const removeLevelFromCurricularGames = async (levelUUID) => {
+  try {
+    // Get all games from the database
+    const gamesRef = ref(db, 'Game');
+    const gamesSnapshot = await get(gamesRef);
+    
+    if (!gamesSnapshot.exists()) {
+      console.log("No games found in database");
+      return;
+    }
+    
+    const games = gamesSnapshot.val();
+    const updatePromises = [];
+    
+    // Iterate through all games to find ones that reference the level
+    for (const gameKey in games) {
+      const game = games[gameKey];
+      
+      // Check if this game has ConjectureUUIDs and if it contains the level we're deleting
+      if (game.ConjectureUUIDs && Array.isArray(game.ConjectureUUIDs)) {
+        const levelIndex = game.ConjectureUUIDs.indexOf(levelUUID);
+        
+        if (levelIndex !== -1) {
+          // Remove the level UUID from the array
+          const updatedConjectureUUIDs = game.ConjectureUUIDs.filter(uuid => uuid !== levelUUID);
+          
+          // Update the game in the database
+          const gameRef = ref(db, `Game/${gameKey}/ConjectureUUIDs`);
+          updatePromises.push(set(gameRef, updatedConjectureUUIDs));
+          
+          console.log(`Removed level ${levelUUID} from game ${game.CurricularName || gameKey}`);
+        }
+      }
+    }
+    
+    // Execute all updates
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      console.log(`Level ${levelUUID} removed from ${updatePromises.length} games`);
+    } else {
+      console.log(`Level ${levelUUID} was not referenced in any games`);
+    }
+    
+  } catch (error) {
+    console.error('Error removing level from curricular games:', error);
+    throw error;
+  }
+};
+
+
 // Helper function to create pose objects for the writeToDatabaseConjecture function 
 const createPoseObjects = async (poseData, state, tolerance) => {
   const dateObj = new Date();

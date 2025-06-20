@@ -144,6 +144,7 @@ const CurricularModule = (props) => {
       } catch (error) {
         console.error('Error during deletion:', error);
         alert("Failed to delete game. Please try again.");
+        mainCallback(); // Go back to main menu
       }
     }
   };
@@ -274,7 +275,7 @@ const CurricularModule = (props) => {
             x={width * 0.73}
             y={height * 0.93}
             color={red}
-            fontSize={width * 0.015}
+            fontSize={width * 0.013}
             fontColor={white}
             text={"DELETE"}
             fontWeight={800}

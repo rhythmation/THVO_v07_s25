@@ -6,7 +6,7 @@ import RectButton from "../RectButton";
 import InputBox from "../InputBox";
 import { ConjectureBox, KeywordsBox, NameBox, PINBox } from "./ConjectureModuleBoxes";
 import { EndBox, IntermediateBox, StartBox } from "../PoseAuth/PoseAuthoringBoxes";
-import { writeToDatabaseConjecture, writeToDatabaseConjectureDraft, keysToPush, searchConjecturesByWord} from "../../firebase/database";
+import { writeToDatabaseConjecture, writeToDatabaseConjectureDraft, keysToPush, searchConjecturesByWord, deleteFromDatabaseConjecture} from "../../firebase/database";
 import { useMachine } from "@xstate/react";
 import { ConjectureEditorMachine } from "../../machines/conjectureEditorMachine";
 
@@ -119,6 +119,31 @@ const ConjectureModule = (props) => {
   useEffect(() => { setLocalStorage();setLoaded(true); }, []);
   if (!loaded) return null;
 
+  const deleteCurrentConjecture = async (currentUUID) => {
+    if (!currentUUID) {
+      alert("No level to delete.");
+      return;
+    }
+
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this entire level? This action cannot be undone."
+    );
+    
+    if (confirmDelete) {
+      try {
+        await deleteFromDatabaseConjecture(currentUUID);
+        // Reset everything after successful deletion
+        resetConjectureValues();
+        backCallback();
+      } catch (error) {
+        console.error('Error during deletion:', error);
+        alert("Failed to delete level. Please try again.");
+        backCallback();
+      }
+    }
+  };  
+
   return (
     <>
       <Background height={height * 1.1} width={width} />
@@ -208,7 +233,7 @@ const ConjectureModule = (props) => {
         <RectButton
           height={height * 0.13}
           width={width * 0.26}
-          x={width * 0.58}
+          x={width * 0.38}
           y={height * 0.93}
           color={neonGreen}
           fontSize={width * 0.014}
@@ -235,11 +260,23 @@ const ConjectureModule = (props) => {
             backCallback(); // Exit Back the main menu
           }}
         />
+        <RectButton
+          height={height * 0.13}
+          width={width * 0.26}
+          x={width * 0.51}
+          y={height * 0.93}
+          color={red}
+          fontSize={width * 0.015}
+          fontColor={white}
+          text={"DELETE"}
+          fontWeight={800}
+          callback={() => deleteCurrentConjecture(currentConjecture.getCurrentUUID())}
+        />
         {/* Publish button */}
         <RectButton
           height={height * 0.13}
           width={width * 0.26}
-          x={width * 0.45}
+          x={width * 0.25}
           y={height * 0.93}
           color={blue}
           fontSize={width * 0.015}
