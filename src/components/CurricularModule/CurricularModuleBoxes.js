@@ -309,7 +309,7 @@ const CurriculumList = ({ xMultiplier, yMultiplier, fontSizeMultiplier, totalWid
       <RectButton
         height={totalHeight * 0.13}
         width={totalWidth * 0.26}
-        x={totalWidth * 0.14}
+        x={totalWidth * 0.13}
         y={totalHeight * 0.93}
         color={blue}
         fontSize={totalWidth * 0.014}

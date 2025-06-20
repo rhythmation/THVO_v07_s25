@@ -555,6 +555,27 @@ export const writeToDatabaseCurricular = async (UUID) => {
   return alert("Game Published"), promises; //returns the promises and alerts that the game has been published
 }
 
+
+export const deleteFromDatabaseCurricular = async (UUID) => {
+  if (!UUID) {
+    return alert("No game ID provided for deletion.");
+  }
+
+  try {
+    const CurricularPath = `Game/${UUID}`;
+    const dbRef = ref(db, CurricularPath);
+    
+    // Remove the entire game from database
+    await remove(dbRef);
+    
+    return alert("Game deleted successfully.");
+  } catch (error) {
+    console.error('Error deleting game:', error);
+    return alert("Error deleting game. Please try again.");
+  }
+};
+
+
 // save dialogues to firebase
 export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
   const timestamp = new Date().toISOString();

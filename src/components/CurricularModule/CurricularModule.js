@@ -4,7 +4,7 @@ import Background from "../Background";
 import { blue, white, red, green, indigo, hotPink, purple } from "../../utils/colors";
 import Button from "../Button"
 import RectButton from "../RectButton";
-import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID } from "../../firebase/database";
+import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID, deleteFromDatabaseCurricular } from "../../firebase/database";
 import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
 import { useMachine } from "@xstate/react";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
@@ -123,6 +123,32 @@ const CurricularModule = (props) => {
     }
   };
 
+
+  const deleteCurrentCurricular = async (currentUUID) => {
+    if (!currentUUID) {
+      alert("No game to delete.");
+      return;
+    }
+
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this entire game? This action cannot be undone."
+    );
+    
+    if (confirmDelete) {
+      try {
+        await deleteFromDatabaseCurricular(currentUUID);
+        // Reset everything after successful deletion
+        resetCurricularValues();
+        mainCallback(); // Go back to main menu
+      } catch (error) {
+        console.error('Error during deletion:', error);
+        alert("Failed to delete game. Please try again.");
+      }
+    }
+  };
+
+
   return (
     <>
       {/* Render the main page content only when the Settings menu is NOT open */}
@@ -206,7 +232,7 @@ const CurricularModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
-            x={width * 0.3}
+            x={width * 0.275}
             y={height * 0.93}
             color={indigo}
             fontSize={width * 0.014}
@@ -221,7 +247,7 @@ const CurricularModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.26}
-            x={width * 0.55}
+            x={width * 0.46}
             y={height * 0.93}
             color={green}
             fontSize={width * 0.013}
@@ -233,14 +259,26 @@ const CurricularModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.26}
-            x={width * 0.73}
+            x={width * 0.57}
             y={height * 0.93}
-            color={blue}
+            color={green}
             fontSize={width * 0.015}
             fontColor={white}
             text={"PUBLISH"}
             fontWeight={800}
             callback={() => publishAndReset(Curriculum.getCurrentUUID())}
+          />
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.73}
+            y={height * 0.93}
+            color={red}
+            fontSize={width * 0.015}
+            fontColor={white}
+            text={"DELETE"}
+            fontWeight={800}
+            callback={() => deleteCurrentCurricular(Curriculum.getCurrentUUID())}
           />
         </>
       )}
