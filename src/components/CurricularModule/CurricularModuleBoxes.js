@@ -127,14 +127,30 @@ function createTextElement(text, xMultiplier, yMultiplier, fontSizeMultiplier, t
 
 const CurriculumList = ({ xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth, totalHeight, conjectureCallback }) => {
   const conjectureList = Curriculum.getCurrentConjectures();
+  const [forceRerender, setForceRerender] = useState(0);
   //use to get a fixed number of conjectures per page and to navigate between the pages
   const conjecturesPerPage = 6;
   const totalPages = Math.ceil(conjectureList.length / conjecturesPerPage);
   const [currentPage, setCurrentPage] = useState(0);
 
+  // Auto-adjust page if we're beyond the last page after deletion
+  useEffect(() => {
+    if (currentPage >= totalPages && totalPages > 0) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [totalPages, currentPage]);
+
   if (conjectureList.length === 0){
     return null;
   }
+
+  if (conjectureList.length === 0){
+    return null;
+  }
+
+  const triggerRerender = () => {
+    setForceRerender(prev => prev + 1);
+  };
 
   const nextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -153,103 +169,129 @@ const CurriculumList = ({ xMultiplier, yMultiplier, fontSizeMultiplier, totalWid
 
   return (
     <>
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={conjecture["Text Boxes"]["Author Name"] + index}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier *4}
-          x={totalWidth * xMultiplier * 0.25}
-          y={totalHeight * (index+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier}
-          color={white}
-          fontSize={totalWidth * fontSizeMultiplier/1.3}
-          fontColor={blue}
-          text={conjecture["Text Boxes"]["Author Name"]}
-          fontWeight="bold"
-          callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
-        />
-      ))}
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={conjecture["Text Boxes"]["Conjecture Name"] + index}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier *7}
-          x={totalWidth * xMultiplier * 1.9}
-          y={totalHeight * (index+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier}
-          color={white}
-          fontSize={totalWidth * fontSizeMultiplier/1.3}
-          fontColor={blue}
-          text={conjecture["Text Boxes"]["Conjecture Name"]}
-          fontWeight="bold"
-          callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
-        />
-      ))}
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={conjecture["Text Boxes"]["Conjecture Keywords"] + index}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier * 7}
-          x={totalWidth * xMultiplier * 4.75} 
-          y={totalHeight * (index+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
-          color={white}
-          fontSize={totalWidth * fontSizeMultiplier/1.3}
-          fontColor={blue}
-          text={conjecture["Text Boxes"]["Conjecture Keywords"]}
-          fontWeight="bold"
-          callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
-        />
-      ))}
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={index + " up"}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier * 0.8}
-          x={totalWidth * xMultiplier * 7.6} 
-          y={totalHeight * yMultiplier + totalHeight * (index+1) * 4 * fontSizeMultiplier} 
-          color={green}
-          fontSize={totalWidth * fontSizeMultiplier}
-          fontColor={white}
-          text={"^"}
-          fontWeight="bold"
-          callback = {() => {
-            Curriculum.moveConjectureUpByIndex(index);
-          }}
-        />
-      ))}
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={index+ " down"}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier * 0.8}
-          x={totalWidth * xMultiplier * 8} 
-          y={totalHeight * (index+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
-          color={red}
-          fontSize={totalWidth * fontSizeMultiplier/1.3}
-          fontColor={white}
-          text={"v"}
-          fontWeight="bold"
-          callback = {() => {
-            Curriculum.moveConjectureDownByIndex(index);
-          }}
-        />
-      ))}
-      {currentConjectures.map((conjecture, index) => (
-        <RectButton
-          key={index + " remove"}
-          height={totalHeight /2 * yMultiplier}
-          width={totalWidth * xMultiplier *1.6}
-          x={totalWidth * xMultiplier * 8.4} 
-          y={totalHeight * (index+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
-          color={orange}
-          fontSize={totalWidth * fontSizeMultiplier/1.3}
-          fontColor={white}
-          text={"Remove"}
-          fontWeight="bold"
-          callback = {() => {
-            Curriculum.removeConjectureByIndex(index);
-          }}
-        />
-      ))}
-      
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex; // Calculate global index
+        return (
+          <RectButton
+            key={conjecture["Text Boxes"]["Author Name"] + globalIndex}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier *4}
+            x={totalWidth * xMultiplier * 0.25}
+            y={totalHeight * (localIndex+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier}
+            color={white}
+            fontSize={totalWidth * fontSizeMultiplier/1.3}
+            fontColor={blue}
+            text={conjecture["Text Boxes"]["Author Name"]}
+            fontWeight="bold"
+            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+          />
+        );
+      })}
+
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex;
+        return (
+          <RectButton
+            key={conjecture["Text Boxes"]["Conjecture Name"] + globalIndex}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier *7}
+            x={totalWidth * xMultiplier * 1.9}
+            y={totalHeight * (localIndex+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier}
+            color={white}
+            fontSize={totalWidth * fontSizeMultiplier/1.3}
+            fontColor={blue}
+            text={conjecture["Text Boxes"]["Conjecture Name"]}
+            fontWeight="bold"
+            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+          />
+        );
+      })}
+
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex;
+        return (
+          <RectButton
+            key={conjecture["Text Boxes"]["Conjecture Keywords"] + globalIndex}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier * 7}
+            x={totalWidth * xMultiplier * 4.75} 
+            y={totalHeight * (localIndex+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
+            color={white}
+            fontSize={totalWidth * fontSizeMultiplier/1.3}
+            fontColor={blue}
+            text={conjecture["Text Boxes"]["Conjecture Keywords"]}
+            fontWeight="bold"
+            callback = {() => handleLevelClicked(conjecture, conjectureCallback)}
+          />
+        );
+      })}
+
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex;
+        return (
+          <RectButton
+            key={globalIndex + " up"}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier * 0.8}
+            x={totalWidth * xMultiplier * 7.6} 
+            y={totalHeight * yMultiplier + totalHeight * (localIndex+1) * 4 * fontSizeMultiplier} 
+            color={green}
+            fontSize={totalWidth * fontSizeMultiplier}
+            fontColor={white}
+            text={"^"}
+            fontWeight="bold"
+            callback = {() => {
+              Curriculum.moveConjectureUpByIndex(globalIndex);
+              triggerRerender();
+            }}
+          />
+        );
+      })}
+
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex;
+        return (
+          <RectButton
+            key={globalIndex + " down"}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier * 0.8}
+            x={totalWidth * xMultiplier * 8} 
+            y={totalHeight * (localIndex+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
+            color={red}
+            fontSize={totalWidth * fontSizeMultiplier/1.3}
+            fontColor={white}
+            text={"v"}
+            fontWeight="bold"
+            callback = {() => {
+              Curriculum.moveConjectureDownByIndex(globalIndex);
+              triggerRerender();
+            }}
+          />
+        );
+      })}
+
+      {currentConjectures.map((conjecture, localIndex) => {
+        const globalIndex = startIndex + localIndex;
+        return (
+          <RectButton
+            key={globalIndex + " remove"}
+            height={totalHeight /2 * yMultiplier}
+            width={totalWidth * xMultiplier *1.6}
+            x={totalWidth * xMultiplier * 8.4} 
+            y={totalHeight * (localIndex+1) * 4 * fontSizeMultiplier + totalHeight * yMultiplier} 
+            color={orange}
+            fontSize={totalWidth * fontSizeMultiplier/1.3}
+            fontColor={white}
+            text={"Remove"}
+            fontWeight="bold"
+            callback = {() => {
+              Curriculum.removeConjectureByIndex(globalIndex);
+              triggerRerender();
+            }}
+          />
+        );
+      })}
+
       <RectButton
         height={totalHeight * 0.13}
         width={totalWidth * 0.26}
