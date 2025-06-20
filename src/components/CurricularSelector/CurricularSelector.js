@@ -52,6 +52,10 @@ async function handleGameClicked(curricular, curricularCallback, setLoading) {
       console.log("Attempting to edit game");
       Curriculum.setCurrentUUID(curricular["UUID"]);
       await Curriculum.setCurricularEditor(curricular);
+    } else {
+    // PIN was cancelled - don't proceed
+    setLoading(false);
+    return; // Exit early, don't call curricularCallback
     }
 
     setLoading(false); // stop loading before callback
