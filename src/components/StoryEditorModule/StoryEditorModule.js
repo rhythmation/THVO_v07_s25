@@ -144,9 +144,10 @@ const StoryEditorModule = (props) => {
   const currentDialogues = dialogues.slice(startIndex, startIndex + dialoguesPerPage);
 
   //Change Chapter
-  const handleChangeChapter = (dialogueIndex, newChapterName) => {
+  const handleChangeChapter = (localIndex, newChapterName) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[dialogueIndex].chapter = newChapterName;
+    updated[globalIndex].chapter = newChapterName;
     setDialogues(updated);
   }
 
@@ -175,52 +176,75 @@ const StoryEditorModule = (props) => {
   };
 
   //Remove a dialogue by index
-  const handleRemoveDialogue = (index) => {
+  const handleRemoveDialogue = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated.splice(index, 1);
+    updated.splice(globalIndex, 1);
     setDialogues(updated);
+
+    // if we removed the last item on the current page
+    // and we're not on the first page, go back one page
+    const newTotalPages = Math.ceil(updated.length / dialoguesPerPage);
+    if (currentPage >= newTotalPages && currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   //Edit a dialogue's text
-  const handleEditDialogue = (index) => {
-    const updatedText = prompt("Edit dialogue:", dialogues[index].text);
+  const handleEditDialogue = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    const updatedText = prompt("Edit dialogue:", dialogues[globalIndex].text);
     if (updatedText !== null) {
       const updated = [...dialogues];
-      updated[index].text = updatedText;
+      updated[globalIndex].text = updatedText;
       setDialogues(updated);
     }
   };
 
   //Toggle Intro/Outro
-  const handleChangeType = (index, newType) => {
+  const handleChangeType = (localIndex, newType) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[index].type = updated[index].type === "Intro" ? "Outro" : "Intro";
+    updated[globalIndex].type = updated[globalIndex].type === "Intro" ? "Outro" : "Intro";
     setDialogues(updated);
   }
 
   //Moves narrative up
-  const handleMoveup = (index) => {
-    if (index > 0) {
+  const handleMoveup = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    if (globalIndex > 0) {
       const updated = [...dialogues];
-      // Swap this item with the one above
-      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      [updated[globalIndex - 1], updated[globalIndex]] = [updated[globalIndex], updated[globalIndex - 1]];
       setDialogues(updated);
+      
+      // If moving the first item of current page up, switch to previous page to follow it
+      if (localIndex === 0 && currentPage > 0) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
   //Moves narrative down
-  const handleMoveDown = (index) => {
-    if (index < dialogues.length - 1) {
-      const updated = [... dialogues];
-      // Swap this item with the one below
-      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+  const handleMoveDown = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    if (globalIndex < dialogues.length - 1) {
+      const updated = [...dialogues];
+      [updated[globalIndex + 1], updated[globalIndex]] = [updated[globalIndex], updated[globalIndex + 1]];
       setDialogues(updated);
+      
+      // If moving the last item of current page down, switch to next page to follow it  
+      const isLastOnPage = localIndex === currentDialogues.length - 1;
+      const isLastOverall = globalIndex === dialogues.length - 1;
+      if (isLastOnPage && !isLastOverall && currentPage < totalPages - 1) {
+        setCurrentPage(currentPage + 1);
+      }
     }
   };
 
-  const handleChangeCharacter = (index, newCharacter) => {
+  const handleChangeCharacter = (localIndex, newCharacter) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[index].character = newCharacter;
+    updated[globalIndex].character = newCharacter;
     setDialogues(updated);
   }
 
