@@ -40,7 +40,7 @@ export const ConjectureSelectorBoxes = (props) => {
       {/* For text input boxes */}
       {createTextElement("Level Select", 0.4, 0.030, 0.025, width, height)}
       {createTextElement("Author", 0.200, 0.160, 0.015, width, height)}
-      {createTextElement("Conjecture Name", 0.450, 0.160, 0.015, width, height)}
+      {createTextElement("Level Name", 0.450, 0.160, 0.015, width, height)}
       {createTextElement("Keywords", 0.750, 0.160, 0.015, width, height)}
       {createTextElement(firstColumn, 0.005, 0.160, 0.015, width, height)}
     </>
