@@ -1,7 +1,7 @@
 import { createMachine } from "xstate";
 
 const LevelPlayMachine = createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QBswDczIArIIYE8A6ASwDsAXAJwHsARY3ZaqAVzAGIBJAOQBUAlAPIB9AMKCAslgAyAUV6yA2gAYAuolAAHarGLli1UhpAAPRAEYAnAGZCAdgBsAFgAcygKzmATO8vKvTgA0IPgWvoTm1k4OXpYukdEO7nYAvinBqBjYeERkVHQMTKwc3LIAGrwq6kgg2rr6hsZmCAHmhMrmLnbeLgGudpZewaEIkYQxDpHKDg4ufjGp6SCZmDgEhHVgErjkAMYAFmRQ7KUVVcZ1egZGNc1uyoSWdk7mdnNOfnZeDsOIc4Q+ZQdawudwOazPWZpDLoVY5EikXRQfbkE7lSpqC46K6NW4WQGED4zcFdPzudxDEJ-SwA9xAyKg8GQlzQ5aw7LrPIsHGkNFnTE1S4NG6gZrmDp2QhgsF2aYzXy+X4If6A4GMiGJVkrDlEagsfL0RjMNh8jHVLTY4VNCwOabjOZ+D5xW0uIJU5U01UMsEamZpJakagQODGbVrEYW+rXa0IAC033akyB0y8rzmLh+7tjdlsXRBzicL2UlncIK17PDCINhWNYCxUdxosQqceIMs7YhvXF5jdI3FXkIGbsYI+jmT7nLWUrm22e0OpCg9Z5McmnqZyghsVlYKVKrpQK6A3cTmsXhZSzD8LISJRS6teNG5nM7nacXc8VBhcmu89++Uh5LE9rEnOFOQobl70jZcHz8WxZW+Sxn26b5QR-WlkwA49rGAi8K3hPVqyNYo72jB9IhzdpXQWIEHGeV00NVf87CPICQJ1QhtVkUgIBIxtTAsYdJQ+E9S1tbwc17P4XHaZMn3lUtvkWNIgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QBswDczIArIIYE8A6ASwDsAXAJwHsARY3ZaqAVzAGIBJAOQBUAlAPIB9AMKCAslgAyAUV6yA2gAYAuolAAHarGLli1UhpAAPRAEYAnAGZCAdgBsAFgAcygKzmATO8vKvTgA0IPgWvoTm1k4OXpYukdEO7nYAvinBqBjYeERkVHQMTKwc3LIAGrwq6kgg2rr6hsZmCAHmhMrmLnbeLgGudpZewaEIkYQxDpHKDg4ufjGp6SCZmDgEhHVgErjkAMYAFmRQ7KUVVcZ1egZGNc1uyoSWdk7mdnNOfnZeDsOIc4Q+ZQdawudwOazPWZpDLoVY5EikXRQfbkE7lSpqC46K6NW4WQGED4zcFdPzudxDEJ-SwA9xAyKg8GQlzQ5aw7LrPIsHGkNFnTE1S4NG6gZrmDp2QhgsF2aYzXy+X4If6A4GMiGJVkrDlEagsfL0RjMNh8jHVLTY4VNCwOabjOZ+D5xW0uIJU5U01UMsEamZa9lrIjkADuYDAvNOZqx9Wu1oQFIc9nMMSJTjTSWsSpVToclmT1kG7lcaSWpGoEDgxm1gejPLjAFpvu1JkDpl5XnMXD93fW7LYuiC3sprNZpso5v6soGEQbCsawLWrXiWm0bA6bG92x03SNxV5CF27GCPo5W+5J3D1pttntDqQoIvY8vwW07JvyckvF5rOSs566UCXQDEWI4XjqCJIiij64qKFjmOY7jtHE7jxKC6bmH+tKtkBlggdYYHTlydaCpaT6wQgfi2LK3x5sk3izO4mGquOb64U4oFLNW8J6rORrFNBIqmBYEK2OO0ReLK0zPK6TEASxwHsfhnEBvC2qyKQEACXGrzJISljse41i2t4fY7n8LjtK28HyoZ3yLDCU7wiGYaCUKZFCQgTgBAeyh9lY1jfK6uZmR6AI5nm4KFtEJYpEAA */
   id: "levelPlay",
   initial: "introDialogue",
   states: {
@@ -9,33 +9,45 @@ const LevelPlayMachine = createMachine({
       on: {
         // When the chapter machine signals that the intro is complete,
         // transition from introDialogue to poseMatching.
-        INTRO_COMPLETE: "poseMatching",
-        NEXT: "poseMatching",
+        INTRO_COMPLETE: "tween",
+
+        NEXT: "tween"
       },
     },
+
     poseMatching: {
       on: {
-        NEXT: "intuition",
+        NEXT: "intuition"
       },
     },
+
     insight: {
       on: {
         NEXT: "outroDialogue",
       },
     },
+
     intuition: {
       on: {
         NEXT: "insight",
       },
     },
+
     outroDialogue: {
       on: {
         NEXT: "levelEnd",
       },
     },
+
     levelEnd: {
       type: "final",
     },
+
+    tween: {
+      on: {
+        NEXT: "poseMatching"
+      }
+    }
   },
 });
 

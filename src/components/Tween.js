@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Stage } from '@inlet/react-pixi';
 import Pose from './Pose';
 
@@ -61,65 +61,117 @@ const Tween = ({
   duration = 2000,
   width = 800,
   height = 600,
-  loop = false,
+  loop = 0, // Number of times to loop (0 = no loop, -1 = infinite)
+  steps = 60,
+  ease = false,
   onComplete = () => {}
 }) => {
   const [currentPose, setCurrentPose] = useState(null);
-  const [startTime, setStartTime] = useState(null);
-  console.log("Tween component rendered with poses:", poses);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loopCount, setLoopCount] = useState(0);
+  
+  const startTimeRef = useRef(null);
+  const animationIdRef = useRef(null);
+  const completedRef = useRef(false);
+  const lastPosesRef = useRef(poses);
 
-  const animate = useCallback(
-    (timestamp) => {
-        if (!startTime) {
-        setStartTime(timestamp);
-        requestAnimationFrame(animate);
-        return;
-        }
+  // Reset when poses change
+  useEffect(() => {
+    if (poses !== lastPosesRef.current) {
+      lastPosesRef.current = poses;
+      completedRef.current = false;
+      startTimeRef.current = null;
+      setCurrentStep(0);
+      setLoopCount(0);
+    }
+  }, [poses]);
 
-        const elapsed = timestamp - startTime;
-        const totalDuration = duration * (poses.length - 1);
-        let progress = elapsed / totalDuration;
+  const updatePoseFromStep = useCallback((step) => {
+    if (poses.length === 0) return;
+    if (poses.length === 1) {
+      setCurrentPose(poses[0]);
+      return;
+    }
 
-        const absoluteProgress = progress * (poses.length - 1);
-        const currentIndex = Math.min(Math.floor(absoluteProgress), poses.length - 2);
-        const nextIndex = Math.min(currentIndex + 1, poses.length - 1);
-        const segmentProgress = absoluteProgress - currentIndex;
-
-        if (progress >= 1) {
-        if (loop) {
-            setStartTime(timestamp);
-        } else {
-            setCurrentPose(poses[poses.length - 1]);
-            onComplete();
-            return;
-        }
-        } else {
-        const easedProgress = easeInOutCubic(segmentProgress);
-        const interpolatedPose = interpolatePoseData(
-            poses[currentIndex],
-            poses[nextIndex],
-            easedProgress
-        );
-        setCurrentPose(interpolatedPose);
-        }
-
-        // Always keep animating unless return above
-        requestAnimationFrame(animate);
-    },
-    [poses, duration, loop, startTime, onComplete]
+    const totalSteps = steps * (poses.length - 1);
+    const clampedStep = Math.max(0, Math.min(totalSteps, step));
+    const progress = clampedStep / totalSteps;
+    
+    const absoluteProgress = progress * (poses.length - 1);
+    const currentIndex = Math.min(Math.floor(absoluteProgress), poses.length - 2);
+    const nextIndex = Math.min(currentIndex + 1, poses.length - 1);
+    const segmentProgress = absoluteProgress - currentIndex;
+    
+    const finalProgress = ease ? easeInOutCubic(segmentProgress) : segmentProgress;
+    const interpolatedPose = interpolatePoseData(
+      poses[currentIndex],
+      poses[nextIndex],
+      finalProgress
     );
+    setCurrentPose(interpolatedPose);
+  }, [poses, steps, ease]);
 
+  const animate = useCallback((timestamp) => {
+    if (poses.length <= 1) return;
+
+    if (!startTimeRef.current) {
+      startTimeRef.current = timestamp;
+    }
+
+    const elapsed = timestamp - startTimeRef.current;
+    const totalDuration = duration * (poses.length - 1);
+    const totalSteps = steps * (poses.length - 1);
+    
+    const targetStep = Math.floor((elapsed / totalDuration) * totalSteps);
+    
+    setCurrentStep(targetStep);
+
+    if (targetStep >= totalSteps) {
+      updatePoseFromStep(totalSteps);
+      
+      if (loop === -1 || loopCount < loop) {
+        startTimeRef.current = timestamp;
+        setCurrentStep(0);
+        setLoopCount(prev => prev + 1);
+      } else {
+        // Only call onComplete once
+        if (!completedRef.current) {
+          completedRef.current = true;
+          onComplete();
+        }
+        return;
+      }
+    } else {
+      updatePoseFromStep(targetStep);
+    }
+
+    animationIdRef.current = requestAnimationFrame(animate);
+  }, [poses, duration, loop, onComplete, steps, updatePoseFromStep, loopCount, ease]);
+
+  // Start animation
   useEffect(() => {
     if (poses.length > 1) {
-      setStartTime(null);
-      requestAnimationFrame(animate);
+      animationIdRef.current = requestAnimationFrame(animate);
     }
+
+    return () => {
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+    };
   }, [animate, poses]);
+
+  // Initialize first pose
+  useEffect(() => {
+    if (poses.length > 0 && !currentPose) {
+      setCurrentPose(poses[0]);
+    }
+  }, [poses, currentPose]);
 
   const poseToRender = currentPose || poses[0];
 
   return (
-    <Stage width={width} height={height} options={{ backgroundColor: 0x000000 }}>
+    <>
       {poseToRender && (
         <Pose
           poseData={poseToRender}
@@ -128,7 +180,7 @@ const Tween = ({
           modelBodySegments={null}
         />
       )}
-    </Stage>
+    </>
   );
 };
 

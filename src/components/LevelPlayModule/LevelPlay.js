@@ -150,17 +150,17 @@ useEffect(() => {
           isOutro={false}
       />
     )}
-    {/* {state.value === "tween" && poses != null && (
+    {state.value === "tween" && poses != null && (
       <Tween
         poses={poses}
         duration={2000}
         width={width}
         height={height}
-        loop={false}
+        loop={3}
         // callback when tween finishes
         onComplete={() => send("NEXT")}
       />
-    )} */}
+    )}
       {state.value === "poseMatching" && poses != null && (
         <>
           <ConjecturePoseContainter
