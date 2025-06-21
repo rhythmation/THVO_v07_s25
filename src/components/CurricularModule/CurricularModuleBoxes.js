@@ -342,7 +342,7 @@ export const CurricularContentEditor = (props) => {
 
       {/* To label the conjectures */}
       {createTextElement("Author", 0.0825, 0.32, 0.015, width, height)}
-      {createTextElement("Conjecture Name", 0.275, 0.32, 0.015, width, height)}
+      {createTextElement("Level Name", 0.275, 0.32, 0.015, width, height)}
       {createTextElement("Keywords", 0.58, 0.32, 0.015, width, height)}
 
       <CurriculumList 
