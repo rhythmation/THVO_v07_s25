@@ -238,7 +238,7 @@ const CurricularModule = (props) => {
             color={indigo}
             fontSize={width * 0.014}
             fontColor={white}
-            text={"+Add Conjecture"}
+            text={"+Add Level"}
             fontWeight={800}
             callback={() => {
               setAddtoCurricular(true);
