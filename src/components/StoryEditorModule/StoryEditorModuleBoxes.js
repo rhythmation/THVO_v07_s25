@@ -277,6 +277,9 @@ export const StoryEditorContentEditor = (props) => {
       {createTextElement("Author:", 0.48, 0.105, 0.018, width, height)}
       {createTextElement("Game Name:", 0.11, 0.10, 0.018, width, height)}
 
+      
+      {createTextElement(`Chapters: ${chapters.length}`, 0.11, 0.14, 0.018, width, height)}
+
       {/* To label the narritives */}
       {createTextElement("Chapter", 0.04, 0.32, 0.015, width, height)}
       {createTextElement("Character", 0.13, 0.32, 0.015, width, height)}

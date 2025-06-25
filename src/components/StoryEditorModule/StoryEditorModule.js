@@ -93,9 +93,25 @@ const StoryEditorModule = (props) => {
 
   // Stores dialogues
   const [dialogues, setDialogues] = useState([]);
+            
+  // ----- Chapters -----
+  // Always keep chapters in sync with the current number of levels (conjectures)
+  const [chapters, setChapters] = useState(() => {
+    const initialCount = Math.max(1, Curriculum.getCurrentConjectures().length);
+    return Array.from({ length: initialCount }, (_, i) => `${i + 1}`);
+  });
 
-  //Stores Chapters
-  const [chapters, setChapters] = useState(["1"]);
+  // Whenever a level is added / removed, automatically mirror that change in chapters
+   useEffect(() => {
+    const levelCount = Math.max(1, Curriculum.getCurrentConjectures().length);
+
+    // Update only when the count actually changes
+    setChapters(prev =>
+      levelCount === prev.length
+        ? prev
+        : Array.from({ length: levelCount }, (_, i) => `${i + 1}`)
+    );
+  }, [Curriculum.getCurrentConjectures().length]); 
 
   useEffect(() => {
     const gameId = gameUUID ?? Curriculum.getCurrentUUID();
@@ -152,11 +168,7 @@ const StoryEditorModule = (props) => {
   }
 
   //Add chapter, called by "Add Chapter" button
-  const handleAddChapter = () => {
-    const newChapterNumber = chapters.length + 1;
-    // Format as "chapter-X"
-    setChapters([...chapters, `${newChapterNumber}`]);
-  };
+  
 
   //Add a new dialogue
   const handleAddDialogue = () => {
@@ -328,18 +340,7 @@ const StoryEditorModule = (props) => {
             fontWeight={800}
             callback={curricularCallback}
           />
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.45}
-            x={width * 0.27}
-            y={height * 0.93}
-            color={indigo}
-            fontSize={width * 0.014}
-            fontColor={white}
-            text={"ADD CHAPTER"}
-            fontWeight={800}
-            callback={handleAddChapter}
-          />
+          
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
