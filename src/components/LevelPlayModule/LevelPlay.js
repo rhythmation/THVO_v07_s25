@@ -8,7 +8,6 @@ import { getConjectureDataByUUID, writeToDatabaseIntuitionStart, writeToDatabase
 import Chapter from "../Chapter";
 import Tween from "../Tween";
 
-
 const LevelPlay = (props) => {
   const {
     columnDimensions,
@@ -31,31 +30,32 @@ const LevelPlay = (props) => {
     console.warn("🚫 Skipping render — invalid UUID or chapter index", { UUID, currentConjectureIdx });
     return null;
   }
-  
+
   const [state, send] = useMachine(LevelPlayMachine);
   const [experimentText, setExperimentText] = useState(
     `Read the following aloud:\n\nFigure it out? \n\n Answer TRUE or FALSE?`
   );
   const [conjectureData, setConjectureData] = useState(null);
   const [poses, setPoses] = useState(null);
-  
-    useEffect(() => {
-      console.log("🎮 LevelPlay state:", state.value); // ← Debug log 3
-    }, [state.value]);
+  const [tweenText, setTweenText] = useState('');
+  const [showTweenText, setShowTweenText] = useState(false);
 
-    // ✅ Auto-skip introDialogue if it's already been shown
-    useEffect(() => {
-      if (state.value === "introDialogue" && hasShownIntro(currentConjectureIdx)) {
-        console.log("🚪 Auto-skipping introDialogue because it's already shown.");
-        send("NEXT");
-      }
-    }, [state.value, hasShownIntro, currentConjectureIdx]);
+  useEffect(() => {
+    console.log("🎮 LevelPlay state:", state.value); // ← Debug log 3
+  }, [state.value]);
 
+  // ✅ Auto-skip introDialogue if it's already been shown
+  useEffect(() => {
+    if (state.value === "introDialogue" && hasShownIntro(currentConjectureIdx)) {
+      console.log("🚪 Auto-skipping introDialogue because it's already shown.");
+      send("NEXT");
+    }
+  }, [state.value, hasShownIntro, currentConjectureIdx]);
 
-  // Get tolerance from the pose data 
+  // Get tolerance from the pose data
   const getTolerance = (poseData) => {
     const tolerance = poseData['tolerance'] || null;
-    if (tolerance != null){
+    if (tolerance != null) {
       // Stored in database as a num% so replace
       return parseInt(tolerance.replace('%', ''));
     }
@@ -64,7 +64,7 @@ const LevelPlay = (props) => {
 
   useEffect(() => {
     // First action, get database data is there is a UUID and set Conjecture Data
-    if(UUID != null){
+    if (UUID != null) {
       const fetchData = async () => {
         try {
           const data = await getConjectureDataByUUID(UUID);
@@ -78,27 +78,27 @@ const LevelPlay = (props) => {
     }
   }, []);
 
-useEffect(() => {
-  if (conjectureData != null) {
-    // Database stores the conjecture data as UUID -> Pose Position -> 'poseData'
-    const startPose = JSON.parse(conjectureData[UUID]['Start Pose']['poseData']);
-    const intermediatePose = JSON.parse(conjectureData[UUID]['Intermediate Pose']['poseData']);
-    const endPose = JSON.parse(conjectureData[UUID]['End Pose']['poseData']);
-    // Tolerance is stored on UUID -> Pose position
-    const startTolerance = getTolerance(conjectureData[UUID]['Start Pose']);
-    const intermediateTolerance = getTolerance(conjectureData[UUID]['Intermediate Pose']);
-    const endTolerance = getTolerance(conjectureData[UUID]['End Pose']);
-    // Set tolerance on the pose objects as PoseMatching accesses the tolerance at a different level
-    startPose["tolerance"] = startTolerance;
-    intermediatePose["tolerance"] = intermediateTolerance;
-    endPose["tolerance"] = endTolerance;
+  useEffect(() => {
+    if (conjectureData != null) {
+      // Database stores the conjecture data as UUID -> Pose Position -> 'poseData'
+      const startPose = JSON.parse(conjectureData[UUID]['Start Pose']['poseData']);
+      const intermediatePose = JSON.parse(conjectureData[UUID]['Intermediate Pose']['poseData']);
+      const endPose = JSON.parse(conjectureData[UUID]['End Pose']['poseData']);
+      // Tolerance is stored on UUID -> Pose position
+      const startTolerance = getTolerance(conjectureData[UUID]['Start Pose']);
+      const intermediateTolerance = getTolerance(conjectureData[UUID]['Intermediate Pose']);
+      const endTolerance = getTolerance(conjectureData[UUID]['End Pose']);
+      // Set tolerance on the pose objects as PoseMatching accesses the tolerance at a different level
+      startPose["tolerance"] = startTolerance;
+      intermediatePose["tolerance"] = intermediateTolerance;
+      endPose["tolerance"] = endTolerance;
 
-    const arr = [startPose, intermediatePose, endPose];
-    setPoses(arr);
+      const arr = [startPose, intermediatePose, endPose];
+      setPoses(arr);
+    }
+
   }
-
-}
-, [conjectureData]);
+    , [conjectureData]);
 
   useEffect(() => {
     // Intuition is reading the conjecture
@@ -107,7 +107,7 @@ useEffect(() => {
         `Read the following ALOUD:\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n Answer: TRUE or FALSE?`
       );
       writeToDatabaseIntuitionStart(gameID);
-    // Insight is explaining why
+      // Insight is explaining why
     } else if (state.value === "insight") {
       setExperimentText(
         `Alright! Explain WHY :\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n is TRUE or FALSE?`
@@ -116,51 +116,77 @@ useEffect(() => {
     }
   }, [state.value]);
 
+  useEffect(() => {
+    if (state.value === "tween") {
+        setTweenText("Watch the character and match the movement!");
+        setShowTweenText(true);
+    } else {
+        setShowTweenText(false);
+    }
+}, [state.value]);
+
+
   return (
     <>
-    <VideoRecorder 
-      phase={state.value} 
-      // CurricularID and gameID not functional at this moment 
-      curricularID={UUID} // This is working correctly now!
-      gameID={gameID} // This is not working
-    />
-    
-    {/* ✅ Debug: Checking if intro should show */}
-    {/*{console.log("👁️ Should render intro?", {
-      state: state.value,
-      hasShown: hasShownIntro(0)
-    })}*/}
-    
-    {state.value === "introDialogue" &&
-      !hasShownIntro(currentConjectureIdx) && // assuming chapter index 0 for now
-      conjectureData && conjectureData[UUID] && (
-        <Chapter
-          key={`chapter-${UUID}-intro`}
-          poseData={poseData}
-          columnDimensions={columnDimensions}
-          rowDimensions={rowDimensions}
-          height={height}
+      <VideoRecorder
+        phase={state.value}
+        // CurricularID and gameID not functional at this moment
+        curricularID={UUID} // This is working correctly now!
+        gameID={gameID} // This is not working
+      />
+
+      {/* ✅ Debug: Checking if intro should show */}
+      {/*{console.log("👁️ Should render intro?", {
+      state: state.value,
+      hasShown: hasShownIntro(0)
+    })}*/}
+
+      {state.value === "introDialogue" &&
+        !hasShownIntro(currentConjectureIdx) && // assuming chapter index 0 for now
+        conjectureData && conjectureData[UUID] && (
+          <Chapter
+            key={`chapter-${UUID}-intro`}
+            poseData={poseData}
+            columnDimensions={columnDimensions}
+            rowDimensions={rowDimensions}
+            height={height}
+            width={width}
+            chapterConjecture={conjectureData[UUID]}
+            currentConjectureIdx={currentConjectureIdx}
+            nextChapterCallback={() => {
+              markIntroShown(currentConjectureIdx); // mark this chapter's intro as shown
+              send("NEXT");
+            }}
+            isOutro={false}
+          />
+        )}
+        {showTweenText && (
+            <div style={{
+                position: 'absolute',
+                top: '10%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'black',
+                fontSize: '24px',
+                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                padding: '10px',
+                borderRadius: '5px',
+                zIndex: 10
+            }}>
+                {tweenText}
+            </div>
+        )}
+      {state.value === "tween" && poses != null && (
+        <Tween
+          poses={poses}
+          duration={2000}
           width={width}
-          chapterConjecture={conjectureData[UUID]}
-          currentConjectureIdx={currentConjectureIdx}
-          nextChapterCallback={() => {
-            markIntroShown(currentConjectureIdx); // mark this chapter's intro as shown
-            send("NEXT");
-          }}
-          isOutro={false}
-      />
-    )}
-    {state.value === "tween" && poses != null && (
-      <Tween
-        poses={poses}
-        duration={2000}
-        width={width}
-        height={height}
-        loop={3}
-        // callback when tween finishes
-        onComplete={() => send("NEXT")}
-      />
-    )}
+          height={height}
+          loop={3}
+          // callback when tween finishes
+          onComplete={() => send("NEXT")}
+        />
+      )}
       {state.value === "poseMatching" && poses != null && (
         <>
           <ConjecturePoseContainter
@@ -171,14 +197,14 @@ useEffect(() => {
             poseData={poseData}
             mainCallback={backCallback}
             UUID={UUID}
-            onCompleteCallback={() => {send("NEXT")}}
+            onCompleteCallback={() => { send("NEXT") }}
             poses={poses}
             gameID={gameID}
           />
         </>
       )}
       {state.value === "intuition" && (
-         <ExperimentalTask
+        <ExperimentalTask
           width={width}
           heigh={height}
           prompt={experimentText}
@@ -189,8 +215,8 @@ useEffect(() => {
           onComplete={() => send("NEXT")}
           cursorTimer={debugMode ? 1000 : 10000}
           gameID={gameID}
-        /> )}
-        {state.value === "insight" && (
+        />)}
+      {state.value === "insight" && (
         <ExperimentalTask
           prompt={experimentText}
           columnDimensions={columnDimensions}
@@ -203,19 +229,19 @@ useEffect(() => {
         />
       )}
       {state.value === "outroDialogue" && conjectureData && conjectureData[UUID] && (
-      <Chapter
-        key={`chapter-${UUID}-outro`}
-        poseData={poseData}
-        columnDimensions={columnDimensions}
-        rowDimensions={rowDimensions}
-        height={height}
-        width={width}
-        chapterConjecture={conjectureData[UUID]} 
-        currentConjectureIdx={currentConjectureIdx} 
-        nextChapterCallback={onLevelComplete} 
-        isOutro={true}
-      />
-    )}
+        <Chapter
+          key={`chapter-${UUID}-outro`}
+          poseData={poseData}
+          columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
+          height={height}
+          width={width}
+          chapterConjecture={conjectureData[UUID]}
+          currentConjectureIdx={currentConjectureIdx}
+          nextChapterCallback={onLevelComplete}
+          isOutro={true}
+        />
+      )}
     </>
   );
 };
