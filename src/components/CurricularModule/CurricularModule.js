@@ -5,7 +5,8 @@ import Button from "../Button";
 import RectButton from "../RectButton";
 // Import necessary Firebase functions
 import { getDatabase, ref, get, update } from "firebase/database";
-import { getConjectureDataByUUID, deleteFromDatabaseCurricular } from "../../firebase/database";
+import { getAuth } from "firebase/auth"; // Import getAuth
+import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase } from "../../firebase/database"; // Import loadGameDialoguesFromFirebase
 import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
 import Settings from '../Settings';
@@ -111,6 +112,14 @@ const CurricularModule = (props) => {
    */
   const handleSave = async (isFinal) => {
     const db = getDatabase();
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("You must be logged in to save a game.");
+      return;
+    }
+
     const gameName = localStorage.getItem('CurricularName');
     const currentUUID = Curriculum.getCurrentUUID() || uuidv4();
 
@@ -118,23 +127,26 @@ const CurricularModule = (props) => {
       alert("Please enter a game name before saving.");
       return;
     }
-    
+
     const gameNameKey = gameName.trim();
-    
+
     // --- START: UNIQUE NAME VALIDATION ---
     const gameNamesRef = ref(db, `gameNames/${gameNameKey}`);
     const snapshot = await get(gameNamesRef);
 
-    // If the name exists and belongs to a DIFFERENT game, block the save.
     if (snapshot.exists() && snapshot.val() !== currentUUID) {
       alert("This game name is already taken. Please choose a different name.");
-      return; // Stop the save process
+      return;
     }
     // --- END: UNIQUE NAME VALIDATION ---
 
     // Proceed with saving the game
     try {
+      // --- START: GATHER ALL DATA ---
       const conjectureUUIDs = Curriculum.getCurrentConjectures().map(c => c.UUID);
+      const existingDialogues = await loadGameDialoguesFromFirebase(currentUUID) || [];
+      const userId = user.uid;
+      const userName = user.email.split('@')[0];
       
       const gameData = {
         CurricularName: gameName,
@@ -144,8 +156,12 @@ const CurricularModule = (props) => {
         ConjectureUUIDs: conjectureUUIDs,
         isFinal: isFinal,
         UUID: currentUUID,
-        // Add any other fields you need to save
+        Time: new Date().toISOString(),
+        Author: userName,
+        AuthorID: userId,
+        Dialogues: existingDialogues
       };
+      // --- END: GATHER ALL DATA ---
 
       // Use a multi-path update to save the game and the name index atomically
       const updates = {};
@@ -155,7 +171,7 @@ const CurricularModule = (props) => {
       await update(ref(db), updates);
 
       alert(`Game ${isFinal ? "published" : "saved as draft"} successfully!`);
-      
+
       // Keep the UUID in case the user wants to continue editing
       Curriculum.setCurrentUUID(currentUUID);
 
@@ -187,8 +203,8 @@ const CurricularModule = (props) => {
         const db = getDatabase();
         const updates = {};
         updates[`/Game/${currentUUID}`] = null; // Delete game data
-        if(gameName) {
-            updates[`/gameNames/${gameName.trim()}`] = null; // Delete name from index
+        if (gameName) {
+          updates[`/gameNames/${gameName.trim()}`] = null; // Delete name from index
         }
         await update(ref(db), updates);
 
