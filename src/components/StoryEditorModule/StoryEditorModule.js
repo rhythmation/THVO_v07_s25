@@ -12,79 +12,7 @@ import Settings from '../Settings'; // Import the Settings component
 import { idToSprite } from "../Chapter"; //Import list of sprites
 import { saveGameDialoguesToFirebase, loadGameDialoguesFromFirebase } from "../../firebase/database";
 import { useEffect } from "react";import { saveNarrativeDraftToFirebase } from "../../firebase/database";
-
-// stores a list of conjectures
-export const Curriculum = {
-  CurrentConjectures: [],
-  CurrentUUID: null, // null if using new game. Same UUID from database if editing existing game.
-
-  addConjecture(conjecture) { // add the entire conjecture object to a list
-    this.CurrentConjectures.push(conjecture);
-  },
-
-  getCurrentConjectures() { // return the game (list of conjectures)
-    return this.CurrentConjectures;
-  },
-
-  getConjecturebyIndex(index) { // return a specific conjecture
-    return this.CurrentConjectures[index];
-  },
-
-  getCurrentUUID(){ //return the UUID if editing an existing game
-    if(this.CurrentUUID != null && this.CurrentUUID != ""){
-      return this.CurrentUUID;
-    }
-    else{
-      return null;
-    }
-  },
-
-  setCurrentUUID(newUUID){
-    this.CurrentUUID = newUUID;
-  },
-
-  moveConjectureUpByIndex(index){ // swaps 2 elements so the index rises up the list
-    if(index > 0) {
-      const temp = this.CurrentConjectures[index - 1];
-      this.CurrentConjectures[index - 1] = this.CurrentConjectures[index];
-      this.CurrentConjectures[index] = temp;
-    }
-  },
-
-  moveConjectureDownByIndex(index){ // swaps 2 elements so the index falls down the list
-    if(index < this.CurrentConjectures.length - 1){
-      const temp = this.CurrentConjectures[index + 1];
-      this.CurrentConjectures[index + 1] = this.CurrentConjectures[index];
-      this.CurrentConjectures[index] = temp;
-    }
-  },
-
-  removeConjectureByIndex(index){ // remove a particular conjecture based on its index in the list
-    this.CurrentConjectures.splice(index, 1);;
-  },
-
-  async setCurricularEditor(curricular){ // fill in curriculum data
-    this.CurrentConjectures = []; // remove previous list of levels
-    if(curricular["ConjectureUUIDs"]){ // only fill in existing values
-      for(i=0; i < curricular["ConjectureUUIDs"].length; i++){
-        conjectureList = await getConjectureDataByUUID(curricular["ConjectureUUIDs"][i]); //getConjectureDataByUUID returns a list
-        conjecture = conjectureList[curricular["ConjectureUUIDs"][i]]; // get the specific conjecture from that list
-        this.CurrentConjectures.push(conjecture);
-      }
-    }
-      localStorage.setItem('CurricularName', curricular["CurricularName"]);
-      localStorage.setItem('CurricularAuthor', curricular["CurricularAuthor"]);
-      localStorage.setItem('CurricularKeywords', curricular["CurricularKeywords"]);
-      if(curricular["CurricularPIN"] != "undefined" && curricular["CurricularPIN"] != null){
-        localStorage.setItem('CurricularPIN', curricular["CurricularPIN"]);
-      }
-  },
-
-  clearCurriculum(){
-    this.CurrentConjectures = []; // remove previous list of levels
-    this.setCurrentUUID(null); // remove UUID
-  },
-};
+import { Curriculum } from '../CurricularModule/CurricularModule';
 
 const StoryEditorModule = (props) => {
   const { height, width, mainCallback, gameUUID, curricularCallback, conjectureSelectCallback, conjectureCallback } = props;
@@ -129,12 +57,6 @@ const StoryEditorModule = (props) => {
 
           return dialogue;
         });
-        
-        // Extract all unique chapters from dialogues
-        const uniqueChapters = [...new Set(updatedDialogues.map(d => d.chapter))];
-        if (uniqueChapters.length > 0) {
-          setChapters(uniqueChapters.sort());
-        }
         
         setDialogues(updatedDialogues);
       }
