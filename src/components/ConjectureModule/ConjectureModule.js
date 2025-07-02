@@ -114,10 +114,28 @@ const ConjectureModule = (props) => {
 
   const [state, send] = useMachine(ConjectureEditorMachine);
   const [isSaved, setIsSaved] = useState(false);
+  // Add local state to force re-renders when correct answer changes
+  const [correctAnswer, setCorrectAnswer] = useState(localStorage.getItem('Correct Answer') || 'A');
   
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => { setLocalStorage();setLoaded(true); }, []);
+  useEffect(() => { 
+    setLocalStorage();
+    setCorrectAnswer(localStorage.getItem('Correct Answer') || 'A');
+    setLoaded(true); 
+  }, []);
   if (!loaded) return null;
+
+  // Helper function to handle option selection
+  const handleOptionSelect = (option) => {
+    if (!editLevel) return;
+    
+    // Update localStorage
+    localStorage.setItem("Correct Answer", option);
+    // Update local state to trigger re-render
+    setCorrectAnswer(option);
+    // Send to state machine
+    send(`OPTION${option}`);
+  };
 
   const deleteCurrentConjecture = async (currentUUID) => {
     if (!currentUUID) {
@@ -152,53 +170,55 @@ const ConjectureModule = (props) => {
       <StartBox height={height * 0.5} width={width * 0.5} x={5} y={4.6} boxState={null} similarityScores={null} inCE={true} />
       <IntermediateBox height={height * 0.5} width={width * 0.5} x={9} y={1.906} boxState={null} similarityScores={null} inCE={true} />
       <EndBox height={height * 0.5} width={width * 0.5} x={13} y={1.2035} boxState={null} similarityScores={null} inCE={true} />
+      
+      {/* Multiple Choice Options */}
       <Button
-        height={height * 0.14}
+        height={height * 0.04}
         width={width * 0.04}
         x={width * 0.10}
         y={height * 0.61}
-        color={blue}
-        fontSize={40}
-        fontColor={white}
-        text={"A"}
-        fontWeight={800}
-        callback={null}
+        color={correctAnswer === "A" ? green : blue}
+        fontSize={20}
+        fontColor={correctAnswer === "A" ? black : white}
+        text={correctAnswer === "A" ? "A ✓" : "A"}
+        fontWeight={100}
+        callback={() => handleOptionSelect("A")}
       />
       <Button
-        height={height * 0.14}
+        height={height * 0.04}
         width={width * 0.04}
         x={width * 0.10}
         y={height * 0.70}
-        color={blue}
-        fontSize={40}
-        fontColor={white}
-        text={"B"}
-        fontWeight={800}
-        callback={null}
+        color={correctAnswer === "B" ? green : blue}
+        fontSize={20}
+        fontColor={correctAnswer === "B" ? black : white}
+        text={correctAnswer === "B" ? "B ✓" : "B"}
+        fontWeight={100}
+        callback={() => handleOptionSelect("B")}
       />
       <Button
-        height={height * 0.14}
+        height={height * 0.04}
         width={width * 0.04}
         x={width * 0.10}
         y={height * 0.79}
-        color={blue}
-        fontSize={40}
-        fontColor={white}
-        text={"C"}
-        fontWeight={800}
-        callback={null}
+        color={correctAnswer === "C" ? green : blue}
+        fontSize={20}
+        fontColor={correctAnswer === "C" ? black : white}
+        text={correctAnswer === "C" ? "C ✓" : "C"}
+        fontWeight={100}
+        callback={() => handleOptionSelect("C")}
       />
       <Button
-        height={height * 0.14}
+        height={height * 0.04}
         width={width * 0.04}
         x={width * 0.10}
         y={height * 0.88}
-        color={blue}
-        fontSize={40}
-        fontColor={white}
-        text={"D"}
-        fontWeight={800}
-        callback={null}
+        color={correctAnswer === "D" ? green : blue}
+        fontSize={20}
+        fontColor={correctAnswer === "D" ? black : white}
+        text={correctAnswer === "D" ? "D ✓" : "D"}
+        fontWeight={100}
+        callback={() => handleOptionSelect("D")}
       />
 
       {/* Only show the pose editor, save, publish, and cancel buttons if the user is editing */}
@@ -321,75 +341,6 @@ const ConjectureModule = (props) => {
             // If it is saved, just go back
             resetConjectureValues();
             backCallback();
-          }
-        }}
-      />
-      {/* 'X' Buttons for the mutliple choice boxes */}
-      <InputBox
-        height={height * 0.14}
-        width={width * 0.07}
-        x={width * 0.735}
-        y={height * 0.58}
-        color={white}
-        fontSize={width * 0.024}  //  Dynamically modify font size based on screen width
-        fontColor={black}
-        text={localStorage.getItem("Correct Answer") === "A" ? " X" : " "}
-        fontWeight={600}
-        callback={() => {
-          if(editLevel){
-            send("OPTIONA");
-            localStorage.setItem("Correct Answer", "A");
-          }
-        }}
-      />
-      <InputBox
-        height={height * 0.14}
-        width={width * 0.07}
-        x={width * 0.735}
-        y={height * 0.67}
-        color={white}
-        fontSize={width * 0.024}  //  Dynamically modify font size based on screen width
-        fontColor={black}
-        text={localStorage.getItem("Correct Answer") === "B" ? " X" : " "}
-        fontWeight={600}
-        callback={() => {
-          if(editLevel){
-            send("OPTIONB");
-            localStorage.setItem("Correct Answer", "B");
-          }
-        }}
-      />
-      <InputBox
-        height={height * 0.14}
-        width={width * 0.07}
-        x={width * 0.735}
-        y={height * 0.76}
-        color={white}
-        fontSize={width * 0.024}  //  Dynamically modify font size based on screen width
-        fontColor={black}
-        text={localStorage.getItem("Correct Answer") === "C" ? " X" : " "}
-        fontWeight={600}
-        callback={() => {
-          if(editLevel){
-            send("OPTIONC");
-            localStorage.setItem("Correct Answer", "C");
-          }
-        }}
-      />
-      <InputBox
-        height={height * 0.14}
-        width={width * 0.07}
-        x={width * 0.735}
-        y={height * 0.85}
-        color={white}
-        fontSize={width * 0.024}  //  Dynamically modify font size based on screen width
-        fontColor={black}
-        text={localStorage.getItem("Correct Answer") === "D" ? " X" : " "}
-        fontWeight={600}
-        callback={() => {
-          if(editLevel){
-            send("OPTIOND");
-            localStorage.setItem("Correct Answer", "D");
           }
         }}
       />
