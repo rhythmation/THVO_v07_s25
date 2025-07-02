@@ -343,8 +343,8 @@ const StoryEditorModule = (props) => {
           
           <RectButton
             height={height * 0.13}
-            width={width * 0.45}
-            x={width * 0.47}
+            width={width * 0.65}
+            x={width * 0.38}
             y={height * 0.93}
             color={indigo}
             fontSize={width * 0.013}
