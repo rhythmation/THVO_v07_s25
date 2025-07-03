@@ -1,30 +1,66 @@
 import { writeToDatabasePoseAuth } from "../../firebase/database";
 
+// Blocking capture if landmarks are missing or invalid
+function isPoseValid(poseData, state) {
+   const requiredLandmarkKeys = [
+      'poseLandmarks',
+      'leftHandLandmarks',
+      'rightHandLandmarks',
+      'faceLandmarks',
+   ];
+
+   const VISIBILITY_THRESHOLD = 0.1;
+   const VALID_RATIO_THRESHOLD = 0.77;  // Need to experiment for different use cases
+
+   for (const key of requiredLandmarkKeys) {
+      const group = poseData[key];
+
+      if (!Array.isArray(group) || group.length === 0) {
+         alert(`❌ Cannot capture. Missing ${key} in the ${state} pose.`);
+         return false;
+      }
+
+      let validCount = 0;
+
+      for (const kpt of group) {
+         if (
+            kpt &&
+            typeof kpt.x === 'number' &&
+            typeof kpt.y === 'number' &&
+            (typeof kpt.visibility !== 'number' || kpt.visibility >= VISIBILITY_THRESHOLD)
+         ) {
+            validCount++;
+         }
+      }
+
+      const ratio = validCount / group.length;
+
+      if (ratio < VALID_RATIO_THRESHOLD) {
+         alert(`❌ Cannot capture. Too many invalid ${key} landmarks in the ${state} pose.\n(${Math.round(ratio * 100)}% valid)`);
+         return false;
+      }
+   }
+
+   return true;
+}
+
 // Function will capture current pose on screen and depending on which box is selected,
 // store it in a JSON file with the appropriate name. This function uses localStorage
 // to temporarily save the poses, only when the uses 'Save' will the poses be pushed.
 export function capturePose(poseData, state) {
-    let poseJson;
+   if (!isPoseValid(poseData, state)) {
+      return; // Block saving invalid poses
+   }
 
-    // If start box is selected, convert to JSON and store start pose.
-    if (state === ('start')) {
-        poseJson = JSON.stringify(poseData);
-        // Save as 'start.json'
-        localStorage.setItem('start.json', poseJson);
-        
-      // If intermediate box is selected, convert to JSON and store intermediate pose.
-      } else if (state === ('intermediate')) {
-        poseJson = JSON.stringify(poseData);
-        // Save as 'intermediate.json'
-        localStorage.setItem('intermediate.json', poseJson);
-      
-      // If end box is selected, convert to JSON and store end pose.
-      } else if (state === ('end')) {
-        poseJson = JSON.stringify(poseData);
-        // Save as 'end.json'
-        localStorage.setItem('end.json', poseJson);
-      }
+   const poseJson = JSON.stringify(poseData);
 
+   if (state === 'start') {
+      localStorage.setItem('start.json', poseJson);
+   } else if (state === 'intermediate') {
+      localStorage.setItem('intermediate.json', poseJson);
+   } else if (state === 'end') {
+      localStorage.setItem('end.json', poseJson);
+   }
 }
 
 // Saves all active poses in localStorage to Firebase and resets localStorage.
