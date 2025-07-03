@@ -29,17 +29,77 @@ const StoryEditorModule = (props) => {
     return Array.from({ length: initialCount }, (_, i) => `${i + 1}`);
   });
 
+  // Function to sort dialogues by chapter (numerically) and then by type (Intro first, then Outro)
+  const sortDialogues = (dialogueArray) => {
+    return [...dialogueArray].sort((a, b) => {
+      // First sort by chapter (convert to number for proper numerical sorting)
+      const chapterA = parseInt(a.chapter) || 0;
+      const chapterB = parseInt(b.chapter) || 0;
+      
+      if (chapterA !== chapterB) {
+        return chapterA - chapterB;
+      }
+      
+      // If chapters are the same, sort by type (Intro before Outro)
+      const typeOrder = { 'Intro': 0, 'Outro': 1 };
+      const typeA = typeOrder[a.type] || 0;
+      const typeB = typeOrder[b.type] || 0;
+      
+      return typeA - typeB;
+    });
+  };
+
   // Whenever a level is added / removed, automatically mirror that change in chapters
-   useEffect(() => {
+  useEffect(() => {
     const levelCount = Math.max(1, Curriculum.getCurrentConjectures().length);
 
-    // Update only when the count actually changes
-    setChapters(prev =>
-      levelCount === prev.length
-        ? prev
-        : Array.from({ length: levelCount }, (_, i) => `${i + 1}`)
-    );
-  }, [Curriculum.getCurrentConjectures().length]); 
+    // Update chapters first
+    setChapters(prev => {
+      if (levelCount === prev.length) {
+        return prev; // No change needed
+      }
+      
+      console.log(`Chapter count changing from ${prev.length} to ${levelCount}`);
+      return Array.from({ length: levelCount }, (_, i) => `${i + 1}`);
+    });
+
+    // Then update dialogues if needed
+    setDialogues(currentDialogues => {
+      let hasChanges = false;
+      const updated = currentDialogues.map(dialogue => {
+        const currentChapter = parseInt(dialogue.chapter) || 1;
+        // If dialogue chapter exceeds max, set it to the highest available chapter
+        if (currentChapter > levelCount) {
+          hasChanges = true;
+          console.log(`Moving dialogue from chapter ${currentChapter} to chapter ${levelCount}`);
+          return { ...dialogue, chapter: levelCount.toString() };
+        }
+        return dialogue;
+      });
+      
+      // Save to database if there were changes to chapter numbers
+      if (hasChanges) {
+        const gameId = Curriculum.getCurrentUUID() || gameUUID;
+        if (gameId) {
+          console.log(`Conjecture count decreased. Updating database...`);
+          // Sort the updated dialogues before saving
+          const sortedUpdated = sortDialogues(updated);
+          saveNarrativeDraftToFirebase(gameId, sortedUpdated).then(() => {
+            console.log("Chapter numbers automatically updated in database due to conjecture removal");
+          }).catch(error => {
+            console.error("✗ Error auto-saving chapter updates:", error);
+          });
+          
+          // Return sorted dialogues to update the UI immediately
+          return sortedUpdated;
+        } else {
+          console.warn("No game ID available for auto-saving chapter updates");
+        }
+      }
+      
+      return updated;
+    });
+  }, [Curriculum.getCurrentConjectures().length, gameUUID]); // Added gameUUID as dependency
 
   useEffect(() => {
     const gameId = gameUUID ?? Curriculum.getCurrentUUID();
@@ -49,20 +109,46 @@ const StoryEditorModule = (props) => {
     }
     loadGameDialoguesFromFirebase(gameId).then((loaded) => {
       if (loaded) {
-        // Ensure all dialogues have properly formatted chapters
+        const maxChapter = Math.max(1, Curriculum.getCurrentConjectures().length);
+        
+        // Ensure all dialogues have properly formatted chapters and are capped to available conjectures
+        let hasChanges = false;
         const updatedDialogues = loaded.map(dialogue => {
+          let updatedDialogue = { ...dialogue };
+          
+          // Add chapter if missing
           if (!dialogue.hasOwnProperty('chapter')) {
-            return { ...dialogue, chapter: "1" }; // Default to chapter-1
+            updatedDialogue.chapter = "1"; // Default to chapter-1
+            hasChanges = true;
           }
-
-          return dialogue;
+          
+          // Cap chapter to maximum available
+          const currentChapter = parseInt(updatedDialogue.chapter) || 1;
+          if (currentChapter > maxChapter) {
+            console.log(`Capping dialogue chapter from ${currentChapter} to ${maxChapter} on load`);
+            updatedDialogue.chapter = maxChapter.toString();
+            hasChanges = true;
+          }
+          
+          return updatedDialogue;
         });
         
-        setDialogues(updatedDialogues);
+        // Sort dialogues after loading and capping
+        const sortedDialogues = sortDialogues(updatedDialogues);
+        setDialogues(sortedDialogues);
+        
+        // If we made changes during loading, save them back to database
+        if (hasChanges) {
+          console.log("Saving capped chapter numbers back to database...");
+          saveNarrativeDraftToFirebase(gameId, sortedDialogues).then(() => {
+            console.log("Capped chapter numbers saved to database");
+          }).catch(error => {
+            console.error("Error saving capped chapter updates:", error);
+          });
+        }
       }
     });
-  }, []);
-
+  }, [gameUUID]);
 
   const dialoguesPerPage = 7;
   const totalPages = Math.ceil(dialogues.length / dialoguesPerPage);
@@ -81,7 +167,6 @@ const StoryEditorModule = (props) => {
   const startIndex = currentPage * dialoguesPerPage;
   const currentDialogues = dialogues.slice(startIndex, startIndex + dialoguesPerPage);
 
-  //Change Chapter
   const handleChangeChapter = (localIndex, newChapterName) => {
     const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
@@ -89,10 +174,6 @@ const StoryEditorModule = (props) => {
     setDialogues(updated);
   }
 
-  //Add chapter, called by "Add Chapter" button
-  
-
-  //Add a new dialogue
   const handleAddDialogue = () => {
     const newText = prompt("Enter dialogue text:");
     if (newText && newText.trim() !== "") {
@@ -103,8 +184,9 @@ const StoryEditorModule = (props) => {
         text: newText,
         character: "player",
         type: "Intro",
-        chapter: defaultChapter // Add formatted chapter
+        chapter: defaultChapter
       };
+      
       setDialogues([...dialogues, newDialogue]);
     }
   };
@@ -191,6 +273,7 @@ const StoryEditorModule = (props) => {
     }
   
     try {
+      // Save dialogues in their current order
       await saveNarrativeDraftToFirebase(gameId, dialogues);
       alert("Dialogues saved to the game node!");
     } catch (error) {
@@ -199,7 +282,6 @@ const StoryEditorModule = (props) => {
     }
     console.log("Saving to Game UUID:", gameId);
   };
-
 
   // Reset Function
   const resetCurricularValues = () => {
