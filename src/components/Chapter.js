@@ -216,7 +216,7 @@ const Chapter = (props) => {
           const allDialogues = Object.values(rawDialogues || {});
           
           if (allDialogues && allDialogues.length > 0) {
-            const currentChapterName = `chapter-${currentConjectureIdx + 1}`;
+            const currentChapterName = `${currentConjectureIdx + 1}`;
             console.log('=== FILTERING DIALOGUES ===');
             console.log('Looking for chapter:', currentChapterName);
             
@@ -313,20 +313,30 @@ const Chapter = (props) => {
   }, [service]);
 
   useEffect(() => {
-    if (characters && currentText) {
-      // console.log("There are characters and current text is set.");
-      // console.log("Characters", characters);
-      // console.log("Current Text", currentText);
+      let spriteImage;
+      
+      if (characters && currentText && currentText.speaker && idToSprite[currentText.speaker]) {
+        // console.log("There are characters and current text is set.");
+        // console.log("Characters", characters);
+        // console.log("Current Text", currentText);
+        spriteImage = idToSprite[currentText.speaker];
+      } else {
+        // Use default speaker for any error condition
+        if (currentText && currentText.speaker && !idToSprite[currentText.speaker]) {
+          console.warn(`Speaker "${currentText.speaker}" not found in idToSprite mapping, using default`);
+        }
+        spriteImage = idToSprite.equilateralTriangle;
+      }
+      
       setSpeaker(
         <Sprite
-          image={idToSprite[currentText.speaker]}
+          image={spriteImage}
           x={0}
           y={0}
           anchor={0}
         />
       );
-    }
-  }, [characters, currentText]);
+    }, [characters, currentText]);
 
   // Show loading state
   if (isLoading) {
