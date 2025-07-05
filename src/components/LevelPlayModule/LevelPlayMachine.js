@@ -9,9 +9,8 @@ const LevelPlayMachine = createMachine({
       on: {
         // When the chapter machine signals that the intro is complete,
         // transition from introDialogue to poseMatching.
-        INTRO_COMPLETE: "tween",
-
-        NEXT: "tween"
+        NEXT: "tween",
+        INTRO_COMPLETE: "tween"
       },
     },
 
