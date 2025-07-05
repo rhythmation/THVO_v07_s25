@@ -1,14 +1,20 @@
-import { useMachine } from "@xstate/react";
-import { useState, useEffect } from "react";
-import ExperimentalTask from "../ExperimentalTask";
-import LevelPlayMachine from "./LevelPlayMachine";
-import ConjecturePoseContainter from "../ConjecturePoseMatch/ConjecturePoseContainer"
-import VideoRecorder from "../VideoRecorder";
-import { getConjectureDataByUUID, writeToDatabaseIntuitionStart, writeToDatabaseIntuitionEnd } from "../../firebase/database";
-import Chapter from "../Chapter";
-import Tween from "../Tween";
+import { useMachine } from '@xstate/react';
+import React, { useState, useEffect } from 'react';
 
-const LevelPlay = (props) => {
+import VideoRecorder from '../VideoRecorder';
+import Chapter from '../Chapter';
+import ConjecturePoseContainter from '../ConjecturePoseMatch/ConjecturePoseContainer';
+import ExperimentalTask from '../ExperimentalTask';
+import Tween from '../Tween';
+
+import LevelPlayMachine from './LevelPlayMachine';
+import {
+  getConjectureDataByUUID,
+  writeToDatabaseIntuitionStart,
+  writeToDatabaseIntuitionEnd,
+} from '../../firebase/database';
+
+export default function LevelPlay(props) {
   const {
     columnDimensions,
     poseData,
@@ -20,192 +26,184 @@ const LevelPlay = (props) => {
     height,
     backCallback,
     currentConjectureIdx,
-    curricularID,
     gameID,
     hasShownIntro,
     markIntroShown,
   } = props;
 
   if (!UUID || currentConjectureIdx === undefined || isNaN(currentConjectureIdx)) {
-    console.warn("🚫 Skipping render — invalid UUID or chapter index", { UUID, currentConjectureIdx });
+    console.warn('🚫 Skipping render — invalid UUID or chapter index', {
+      UUID,
+      currentConjectureIdx,
+    });
     return null;
   }
 
   const [state, send] = useMachine(LevelPlayMachine);
-  const [experimentText, setExperimentText] = useState(
-    `Read the following aloud:\n\nFigure it out? \n\n Answer TRUE or FALSE?`
-  );
   const [conjectureData, setConjectureData] = useState(null);
-  const [poses, setPoses] = useState(null);
-  const [tweenText, setTweenText] = useState('');
-  // const [showTweenText, setShowTweenText] = useState(false); // 👈 REMOVED
+  const [poses, setPoses] = useState([]);
+  const [expText, setExpText] = useState('');
 
+  /* ---------- load conjecture data ---------- */
   useEffect(() => {
-    console.log("🎮 LevelPlay state:", state.value);
-  }, [state.value]);
+    getConjectureDataByUUID(UUID)
+      .then((d) => {
+        setConjectureData(d);
+        const { ['Start Pose']: s, ['Intermediate Pose']: i, ['End Pose']: e } = d[UUID];
+        setPoses([
+          JSON.parse(s.poseData),
+          JSON.parse(i.poseData),
+          JSON.parse(e.poseData),
+        ]);
+      })
+      .catch(console.error);
+  }, [UUID]);
 
+  /* ---------- experimental prompt ---------- */
   useEffect(() => {
-    if (state.value === "introDialogue" && hasShownIntro(currentConjectureIdx)) {
-      console.log("🚪 Auto-skipping introDialogue because it's already shown.");
-      send("NEXT");
-    }
-  }, [state.value, hasShownIntro, currentConjectureIdx]);
+    if (!conjectureData) return;
+    const desc = conjectureData[UUID]['Text Boxes']['Conjecture Description'];
 
-  const getTolerance = (poseData) => {
-    const tolerance = poseData['tolerance'] || null;
-    if (tolerance != null) {
-      return parseInt(tolerance.replace('%', ''));
-    }
-    return null;
-  }
-
-  useEffect(() => {
-    if (UUID != null) {
-      const fetchData = async () => {
-        try {
-          const data = await getConjectureDataByUUID(UUID);
-          setConjectureData(data);
-          console.log("📦 Loaded Conjecture Data:", data);
-        } catch (error) {
-          console.error('Error getting data: ', error);
-        }
-      };
-      fetchData();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (conjectureData != null) {
-      const startPose = JSON.parse(conjectureData[UUID]['Start Pose']['poseData']);
-      const intermediatePose = JSON.parse(conjectureData[UUID]['Intermediate Pose']['poseData']);
-      const endPose = JSON.parse(conjectureData[UUID]['End Pose']['poseData']);
-      const startTolerance = getTolerance(conjectureData[UUID]['Start Pose']);
-      const intermediateTolerance = getTolerance(conjectureData[UUID]['Intermediate Pose']);
-      const endTolerance = getTolerance(conjectureData[UUID]['End Pose']);
-      startPose["tolerance"] = startTolerance;
-      intermediatePose["tolerance"] = intermediateTolerance;
-      endPose["tolerance"] = endTolerance;
-
-      const arr = [startPose, intermediatePose, endPose];
-      setPoses(arr);
-    }
-  }, [conjectureData]);
-
-  useEffect(() => {
-    if (state.value === "intuition") {
-      setExperimentText(
-        `Read the following ALOUD:\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n Answer: TRUE or FALSE?`
-      );
+    if (state.value === 'intuition') {
+      setExpText(`Read aloud:\n\n${desc}\n\nAnswer TRUE or FALSE?`);
       writeToDatabaseIntuitionStart(gameID);
-    } else if (state.value === "insight") {
-      setExperimentText(
-        `Alright! Explain WHY :\n\n${conjectureData[UUID]['Text Boxes']['Conjecture Description']}\n\n is TRUE or FALSE?`
-      );
+    } else if (state.value === 'insight') {
+      setExpText(`Explain WHY:\n\n${desc}\n\nis TRUE or FALSE?`);
       writeToDatabaseIntuitionEnd(gameID);
-    }
-  }, [state.value]);
-
-  useEffect(() => {
-    // This now correctly sets the text for the Tween component
-    if (state.value === "tween") {
-        setTweenText("Watch the character and match the movement!");
     } else {
-        // It's good practice to clear it when not in use
-        setTweenText('');
+      setExpText('');
     }
-  }, [state.value]);
+  }, [state.value, conjectureData, UUID, gameID]);
 
+  /* ---------- tween message (shown inside Tween for 1 s) ---------- */
+  const tweenMsg =
+    state.value === 'tween'
+      ? 'Watch the character and match the movement!'
+      : '';
+
+
+      useEffect(() => {
+  if (state.value !== 'tween') return;
+
+  // create a plain DOM node so React-Pixi never sees it
+  const banner = document.createElement('div');
+  banner.textContent = 'Watch the character and match the movement!';
+  Object.assign(banner.style, {
+    position: 'fixed',
+    top: '50px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 9999,
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: '32px',
+    textShadow: '0 0 4px #000',
+    pointerEvents: 'none',
+  });
+  document.body.appendChild(banner);
+
+  const timer = setTimeout(() => banner.remove(), 1000);
+
+  return () => {
+    clearTimeout(timer);
+    banner.remove();
+  };
+}, [state.value]);
 
   return (
     <>
-      <VideoRecorder
-        phase={state.value}
-        curricularID={UUID}
-        gameID={gameID}
-      />
+      <VideoRecorder phase={state.value} curricularID={UUID} gameID={gameID} />
 
-      {state.value === "introDialogue" &&
+      {/* Intro dialogue */}
+      {state.value === 'introDialogue' &&
         !hasShownIntro(currentConjectureIdx) &&
-        conjectureData && conjectureData[UUID] && (
+        conjectureData && (
           <Chapter
-            key={`chapter-${UUID}-intro`}
+            key={`intro-${UUID}`}
             poseData={poseData}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
-            height={height}
             width={width}
+            height={height}
             chapterConjecture={conjectureData[UUID]}
             currentConjectureIdx={currentConjectureIdx}
             nextChapterCallback={() => {
               markIntroShown(currentConjectureIdx);
-              send("NEXT");
+              send('NEXT');
             }}
             isOutro={false}
           />
         )}
 
-       
-
-      {state.value === "tween" && poses != null && (
+      {/* Tween animation */}
+      {state.value === 'tween' && poses.length > 0 && (
         <Tween
           poses={poses}
           duration={2000}
           width={width}
           height={height}
-          loop={3}
-          text={tweenText} 
-          onComplete={() => send("NEXT")}
+          loopCount={3}
+          ease={true}
+          message={tweenMsg}      
+          onComplete={() => send('NEXT')}
         />
       )}
-      {state.value === "poseMatching" && poses != null && (
-        <>
-          <ConjecturePoseContainter
-            width={width}
-            height={height}
-            columnDimensions={columnDimensions}
-            rowDimensions={rowDimensions}
-            poseData={poseData}
-            mainCallback={backCallback}
-            UUID={UUID}
-            onCompleteCallback={() => { send("NEXT") }}
-            poses={poses}
-            gameID={gameID}
-          />
-        </>
+
+      {/* Pose-matching */}
+      {state.value === 'poseMatching' && poses.length > 0 && (
+        <ConjecturePoseContainter
+          width={width}
+          height={height}
+          columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
+          poseData={poseData}
+          mainCallback={backCallback}
+          UUID={UUID}
+          poses={poses}
+          onCompleteCallback={() => send('NEXT')}
+          gameID={gameID}
+        />
       )}
-      {state.value === "intuition" && (
+
+      {/* Intuition / Insight */}
+      {state.value === 'intuition' && (
         <ExperimentalTask
           width={width}
-          heigh={height}
-          prompt={experimentText}
+          height={height}
+          prompt={expText}
           columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
           poseData={poseData}
           UUID={UUID}
-          rowDimensions={rowDimensions}
-          onComplete={() => send("NEXT")}
+          onComplete={() => send('NEXT')}
           cursorTimer={debugMode ? 1000 : 10000}
           gameID={gameID}
-        />)}
-      {state.value === "insight" && (
+        />
+      )}
+      {state.value === 'insight' && (
         <ExperimentalTask
-          prompt={experimentText}
+          width={width}
+          height={height}
+          prompt={expText}
           columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
           poseData={poseData}
           UUID={UUID}
-          rowDimensions={rowDimensions}
-          onComplete={() => send("NEXT")}
+          onComplete={() => send('NEXT')}
           cursorTimer={debugMode ? 1000 : 5000}
           gameID={gameID}
         />
       )}
-      {state.value === "outroDialogue" && conjectureData && conjectureData[UUID] && (
+
+      {/* Outro dialogue */}
+      {state.value === 'outroDialogue' && conjectureData && (
         <Chapter
-          key={`chapter-${UUID}-outro`}
+          key={`outro-${UUID}`}
           poseData={poseData}
           columnDimensions={columnDimensions}
           rowDimensions={rowDimensions}
-          height={height}
           width={width}
+          height={height}
           chapterConjecture={conjectureData[UUID]}
           currentConjectureIdx={currentConjectureIdx}
           nextChapterCallback={onLevelComplete}
@@ -214,6 +212,4 @@ const LevelPlay = (props) => {
       )}
     </>
   );
-};
-
-export default LevelPlay;
+}
