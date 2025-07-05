@@ -43,6 +43,8 @@ export default function LevelPlay(props) {
   const [conjectureData, setConjectureData] = useState(null);
   const [poses, setPoses] = useState([]);
   const [expText, setExpText] = useState('');
+  const tweenDuration = 2000;
+  const tweenLoopCount = 2;
 
   /* ---------- load conjecture data ---------- */
   useEffect(() => {
@@ -83,32 +85,32 @@ export default function LevelPlay(props) {
 
 
       useEffect(() => {
-  if (state.value !== 'tween') return;
+        if (state.value !== 'tween') return;
 
-  // create a plain DOM node so React-Pixi never sees it
-  const banner = document.createElement('div');
-  banner.textContent = 'Watch the character and match the movement!';
-  Object.assign(banner.style, {
-    position: 'fixed',
-    top: '50px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 9999,
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: '32px',
-    textShadow: '0 0 4px #000',
-    pointerEvents: 'none',
-  });
-  document.body.appendChild(banner);
+        // create a plain DOM node so React-Pixi never sees it
+        const banner = document.createElement('div');
+        banner.textContent = 'Watch the character and match the movement!';
+        Object.assign(banner.style, {
+          position: 'fixed',
+          top: '50px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          color: '#fff',
+          fontWeight: 'bold',
+          fontSize: '32px',
+          textShadow: '0 0 4px #000',
+          pointerEvents: 'none',
+        });
+        document.body.appendChild(banner);
 
-  const timer = setTimeout(() => banner.remove(), 1000);
+        const timer = setTimeout(() => banner.remove(), tweenDuration * (tweenLoopCount+1));
 
-  return () => {
-    clearTimeout(timer);
-    banner.remove();
-  };
-}, [state.value]);
+        return () => {
+          clearTimeout(timer);
+          banner.remove();
+        };
+      }, [state.value]);
 
   return (
     <>
@@ -139,12 +141,11 @@ export default function LevelPlay(props) {
       {state.value === 'tween' && poses.length > 0 && (
         <Tween
           poses={poses}
-          duration={2000}
+          duration={tweenDuration}
           width={width}
           height={height}
-          loopCount={3}
-          ease={true}
-          message={tweenMsg}      
+          loop={tweenLoopCount}
+          ease={true}    
           onComplete={() => send('NEXT')}
         />
       )}
