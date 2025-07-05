@@ -25,7 +25,7 @@ const StoryEditorModule = (props) => {
   // ----- Chapters -----
   // Always keep chapters in sync with the current number of levels (conjectures)
   const [chapters, setChapters] = useState(() => {
-    const initialCount = Math.max(1, Curriculum.getCurrentConjectures().length);
+    const initialCount = Curriculum.getCurrentConjectures().length;
     return Array.from({ length: initialCount }, (_, i) => `${i + 1}`);
   });
 
@@ -51,7 +51,7 @@ const StoryEditorModule = (props) => {
 
   // Whenever a level is added / removed, automatically mirror that change in chapters
   useEffect(() => {
-    const levelCount = Math.max(1, Curriculum.getCurrentConjectures().length);
+    const levelCount = Curriculum.getCurrentConjectures().length;
 
     // Update chapters first
     setChapters(prev => {
@@ -178,8 +178,8 @@ const StoryEditorModule = (props) => {
     const newText = prompt("Enter dialogue text:");
     if (newText && newText.trim() !== "") {
       // Default to the latest chapter (or first if none exist)
-      const defaultChapter = chapters.length > 0 ? chapters[chapters.length - 1] : "1";
-      
+      if (chapters.length === 0) setChapters(["1"]);
+      const defaultChapter = chapters.length ? chapters[chapters.length - 1] : "1";      
       const newDialogue = {
         text: newText,
         character: "player",
