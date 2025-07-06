@@ -8,34 +8,37 @@ import { blue, red, green, orange, pink, } from "../../utils/colors";
 
 // =========== HANDLER FUNCTIONS ===========
 
-function handleCurricularName(key) {
+function handleCurricularName(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Please name your Game:", existingValue);
   if (newValue !== null) {
     localStorage.setItem(key, newValue);
+    trigger();
   }
 }
-
-function handleCurricularKeywords(key) {
+function handleCurricularKeywords(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Keywords make your search easier:", existingValue);
   if (newValue !== null) {
     localStorage.setItem(key, newValue);
+    trigger();
   }
 }
 
-function handleCurricularAuthor(key) {
+function handleCurricularAuthor(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Please add an Author name:", existingValue);
   if (newValue !== null) {
     localStorage.setItem(key, newValue);
+    trigger();
   }
 }
 
-function handlePinInput(key) {
+function handlePinInput(key, trigger) {
   let pin = prompt("Enter a code PIN", localStorage.getItem(key));
   if (pin && !isNaN(pin)) {
     localStorage.setItem(key, pin);
+    trigger();
   } else if (pin !== null) {
     alert("PIN must be numeric.");
   }
@@ -51,7 +54,8 @@ function createInputBox(
   textKey,
   totalWidth,
   totalHeight,
-  callback
+  callback,
+  renderKey
 ) {
   const raw = localStorage.getItem(textKey);
   const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
@@ -77,7 +81,7 @@ function createInputBox(
 
   return (
     <InputBox
-      key={textKey}
+      key={`${textKey}-${renderKey}`}      
       height={boxHeight}
       width={boxWidth}
       x={xPos}
@@ -222,6 +226,10 @@ export const StoryEditorContentEditor = (props) => {
   const { height, width, conjectureCallback, dialogues, onMoveUp, onMoveDown, 
           onAddDialogue, onRemoveDialogue, onEditDialogue, onChangeType, idToSprite,
           onChangeCharacter, chapters, onChangeChapter,} = props;
+
+ // force rerender key (same pattern as CurricularModuleBoxes)
+  const [renderKey, setRenderKey] = useState(0);
+  const triggerRerender = () => setRenderKey(prev => prev + 1);
   
   //Local state to track which row is open for Character
   const [openDropdownIndex, setOpenDropdownIndex] = useState(-1);
@@ -246,7 +254,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularName",
         width,
         height,
-        handleCurricularName
+        (key) => handleCurricularName(key, triggerRerender),
+        renderKey
       )}
       {createInputBox(
         180,
@@ -257,7 +266,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularKeywords",
         width,
         height,
-        handleCurricularKeywords
+        (key) => handleCurricularKeywords(key, triggerRerender),
+        renderKey
       )}
       {createInputBox(
         220,
@@ -268,7 +278,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularAuthor",
         width,
         height,
-        handleCurricularAuthor
+        (key) => handleCurricularAuthor(key, triggerRerender),
+        renderKey
       )}
       {createInputBox(
         4,
@@ -279,8 +290,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularPIN",
         width,
         height,
-        handlePinInput
-      )}
+        (key) => handlePinInput(key, triggerRerender),
+        renderKey      )}
 
       {/* For the text input boxes */}
       {createTextElement("Story Editor", 0.43, 0.03, 0.025, width, height)}
