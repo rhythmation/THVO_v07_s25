@@ -53,10 +53,22 @@ function createInputBox(
   totalHeight,
   callback
 ) {
-  const existingValue = localStorage.getItem(textKey) || "undefined";
-  const truncatedValue =
-    existingValue.slice(0, charLimit) +
-    (existingValue.length > charLimit ? "..." : "");
+  const raw = localStorage.getItem(textKey);
+  const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
+  const isPlaceholder = !value;
+
+  const placeholderMap = {
+    CurricularName: 'Enter game name…',
+    CurricularAuthor: 'Author',
+    CurricularKeywords: 'keyword1, keyword2',
+    CurricularPIN: '4‑digit PIN',
+  };
+
+  const displayText = value
+    ? value.length > charLimit
+      ? value.slice(0, charLimit) + '…'
+      : value
+    : placeholderMap[textKey] ?? '';
 
   const boxHeight = totalHeight * scaleFactor;
   const boxWidth = totalWidth * widthMultiplier;
@@ -72,8 +84,8 @@ function createInputBox(
       y={yPos}
       color={white}
       fontSize={totalWidth * 0.012}
-      fontColor={black}
-      text={truncatedValue}
+      fontColor={isPlaceholder ? '#888' : black}
+      text={displayText}
       fontWeight={500}
       outlineColor={black}
       callback={() => callback(textKey)}
