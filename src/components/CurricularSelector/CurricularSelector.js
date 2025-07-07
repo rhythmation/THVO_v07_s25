@@ -7,6 +7,7 @@ import { getUserNameFromDatabase, getUserRoleFromDatabase } from "../../firebase
 import { CurricularSelectorBoxes } from "./CurricularSelectorModuleBoxes";
 import { useMachine } from "@xstate/react";
 import { Curriculum } from "../CurricularModule/CurricularModule";
+import PixiLoader from "../utilities/PixiLoader";
 
 export let playGame = false; // keep track of whether the curricular content list is being used to edit or play games.
 
@@ -74,15 +75,17 @@ const CurricularSelectModule = (props) => {
   const [curricularList, setCurricularList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedCurricular, setSelectedCurricular] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const result = await getCurricularList(getPlayGame());
         setCurricularList(result);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoading(false);
       }
     };
 
@@ -197,6 +200,15 @@ const CurricularSelectModule = (props) => {
       </>
     );
   };
+
+  if (loading) {
+    return (
+      <>
+        <Background height={height * 1.1} width={width} />
+        <PixiLoader width={width} height={height} />
+      </>
+    );
+  }
 
   return (
     <>

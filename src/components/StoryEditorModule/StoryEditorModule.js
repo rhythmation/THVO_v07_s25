@@ -13,11 +13,13 @@ import { idToSprite } from "../Chapter"; //Import list of sprites
 import { saveGameDialoguesToFirebase, loadGameDialoguesFromFirebase } from "../../firebase/database";
 import { useEffect } from "react";import { saveNarrativeDraftToFirebase } from "../../firebase/database";
 import { Curriculum } from '../CurricularModule/CurricularModule';
+import PixiLoader from '../utilities/PixiLoader';
 
 const StoryEditorModule = (props) => {
   const { height, width, mainCallback, gameUUID, curricularCallback, conjectureSelectCallback, conjectureCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Stores dialogues
   const [dialogues, setDialogues] = useState([]);
@@ -136,6 +138,7 @@ const StoryEditorModule = (props) => {
         // Sort dialogues after loading and capping
         const sortedDialogues = sortDialogues(updatedDialogues);
         setDialogues(sortedDialogues);
+        setLoading(false);
         
         // If we made changes during loading, save them back to database
         if (hasChanges) {
@@ -146,6 +149,8 @@ const StoryEditorModule = (props) => {
             console.error("Error saving capped chapter updates:", error);
           });
         }
+      } else {
+          setLoading(false);
       }
     });
   }, [gameUUID]);
@@ -317,6 +322,15 @@ const StoryEditorModule = (props) => {
       // Curriculum.CurrentConjectures = []; - REMOVE THIS
     }
   };
+
+  if (loading) {
+    return (
+      <>
+        <Background height={height * 1.1} width={width} />
+        <PixiLoader height={height} width={width} />
+      </>
+    );
+  }
 
   return (
     <>

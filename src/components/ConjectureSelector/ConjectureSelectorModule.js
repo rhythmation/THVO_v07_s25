@@ -7,6 +7,7 @@ import { ConjectureSelectorBoxes } from "./ConjectureSelectorModuleBoxes";
 import { useMachine } from "@xstate/react";
 import { Curriculum } from "../CurricularModule/CurricularModule";
 import { currentConjecture, setEditLevel, setGoBackFromLevelEdit } from "../ConjectureModule/ConjectureModule"
+import PixiLoader from '../utilities/PixiLoader';
 
 import InputBox from '../InputBox';
 
@@ -57,14 +58,17 @@ const ConjectureSelectModule = (props) => {
   const [conjectureList, setConjectureList] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedConjecture, setSelectedConjecture] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const result = await getConjectureList(addToCurricular);
         setConjectureList(result);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoading(false);
       }
     };
 
@@ -217,6 +221,15 @@ const ConjectureSelectModule = (props) => {
     } else {
       setSearch(enteredSearch);
     }
+  }
+
+    if (loading) {
+    return (
+      <>
+        <Background height={height * 1.1} width={width} />
+        <PixiLoader width={width} height={height} />
+      </>
+    );
   }
 
   return (
