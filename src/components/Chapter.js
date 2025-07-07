@@ -215,57 +215,70 @@ const Chapter = (props) => {
           const rawDialogues = await loadGameDialoguesFromFirebase(gameId);
           const allDialogues = Object.values(rawDialogues || {});
           
-          if (allDialogues && allDialogues.length > 0) {
-            const currentChapterName = `${currentConjectureIdx + 1}`;
-            console.log('=== FILTERING DIALOGUES ===');
-            console.log('Looking for chapter:', currentChapterName);
-            
-            const chapterDialogues = allDialogues.filter(
-              dialogue => dialogue.chapter === currentChapterName
-            );
-            console.log('Found dialogues:', chapterDialogues);
+          const currentChapterName = `${currentConjectureIdx + 1}`;
+          console.log('=== FILTERING DIALOGUES ===');
+          console.log('Looking for chapter:', currentChapterName);
+          
+          const chapterDialogues = allDialogues.filter(
+            dialogue => dialogue.chapter === currentChapterName
+          );
+          console.log('Found dialogues:', chapterDialogues);
 
-            const intros = chapterDialogues
-              .filter(dialogue => dialogue.type === "Intro")
-              .map(dialogue => ({ 
-                text: dialogue.text, 
-                speaker: dialogue.character || "player"
-              }));
-            console.log('Filtered intros:', intros);
-              
-            const outros = chapterDialogues
-              .filter(dialogue => dialogue.type === "Outro")
-              .map(dialogue => ({
-                text: dialogue.text, 
-                speaker: dialogue.character || "player"
-              }));
-            console.log('Filtered outros:', outros);
+          const loadedIntros = chapterDialogues
+            .filter(dialogue => dialogue.type === "Intro")
+            .map(dialogue => ({ 
+              text: dialogue.text, 
+              speaker: dialogue.character || "player"
+            }));
 
-            const scene = [];
-            if (script[currentChapterName] && script[currentChapterName].scene) {
-              scene.push(...script[currentChapterName].scene);
-            }
+          const intros = loadedIntros.length > 0
+            ? loadedIntros
+            : [
+                { text: "Welcome to the chapter.", speaker: "narrator" },
+                { text: "Let's begin our journey.", speaker: "player" },
+              ];
+          
+          const loadedOutros = chapterDialogues
+            .filter(dialogue => dialogue.type === "Outro")
+            .map(dialogue => ({
+              text: dialogue.text, 
+              speaker: dialogue.character || "player"
+            }));
 
-            console.log('=== UPDATING STATE ===');
-            console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
-            setDialogueData({
-              intro: intros,
-              outro: outros,
-              scene: scene
-            });
+          const outros = loadedOutros.length > 0
+            ? loadedOutros
+            : [
+                { text: "Great job completing the chapter!", speaker: "narrator" },
+                { text: "Ready for what's next?", speaker: "player" },
+              ];
 
-            console.log('Sending RESET_CONTEXT to state machine');
-            send({
-              type: "RESET_CONTEXT",
-              introText: intros,
-              outroText: outros,
-              scene: scene,
-              currentText: isOutro ? outros[0] : intros[0],
-              lastText: [],
-              cursorMode: true,
-              isOutro: isOutro,
-            });
+          console.log('Filtered intros:', intros);
+          console.log('Filtered outros:', outros);
+          
+          const scene = [];
+          if (script[currentChapterName] && script[currentChapterName].scene) {
+            scene.push(...script[currentChapterName].scene);
           }
+
+          console.log('=== UPDATING STATE ===');
+          console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
+          setDialogueData({
+            intro: intros,
+            outro: outros,
+            scene: scene
+          });
+
+          console.log('Sending RESET_CONTEXT to state machine');
+          send({
+            type: "RESET_CONTEXT",
+            introText: intros,
+            outroText: outros,
+            scene: scene,
+            currentText: isOutro ? outros[0] : intros[0],
+            lastText: [],
+            cursorMode: true,
+            isOutro: isOutro,
+          });
         } catch (error) {
           console.error("Error loading dialogues:", error);
         } finally {

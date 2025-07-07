@@ -198,6 +198,22 @@ export default function LevelPlay(props) {
           gameID={gameID}
         />
       )}
+      {/* Uncomment when mcq state is added */}
+      {/* {state.value === 'mcq' && (
+        <mcq
+          width={width}
+          height={height}
+          question={}
+          answerChoices={}
+          columnDimensions={columnDimensions}
+          rowDimensions={rowDimensions}
+          poseData={poseData}
+          UUID={UUID}
+          onComplete={() => send('NEXT')}
+          pressDelay={3000ms}
+          gameID={gameID}
+        />
+      )} */}
 
       {/* Outro dialogue */}
       {state.value === 'outroDialogue' && conjectureData && (
