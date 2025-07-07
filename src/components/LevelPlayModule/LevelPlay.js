@@ -40,6 +40,9 @@ export default function LevelPlay(props) {
   }
 
   const [state, send] = useMachine(LevelPlayMachine);
+  React.useEffect(() => {
+    send("RESET_CONTEXT");
+  }, [currentConjectureIdx, send]);
   const [conjectureData, setConjectureData] = useState(null);
   const [poses, setPoses] = useState([]);
   const [expText, setExpText] = useState('');
@@ -207,8 +210,10 @@ export default function LevelPlay(props) {
           height={height}
           chapterConjecture={conjectureData[UUID]}
           currentConjectureIdx={currentConjectureIdx}
-          nextChapterCallback={onLevelComplete}
-          isOutro={true}
+         nextChapterCallback={() => {
+          // tell parent to advance the level...
+          onLevelComplete();
+        }}          isOutro={true}
         />
       )}
     </>
