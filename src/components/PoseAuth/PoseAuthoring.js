@@ -109,20 +109,22 @@ const PoseAuthoring = (props) => {
     const handleSave = () => {
       if (localStorage.length === 0) {
         console.log("Local Storage is empty. Nothing to save.");
+        conjectureCallback();
         return;
       }
       saveConjecture();
-      setNotificationMessage("Saved Successfully!");
-      setBoxVisible(true);
-      setTimeout(() => setBoxVisible(false), 3000);
+      conjectureCallback();
     };
 
     // Function that handles reseting all poses and tolerance when clicked
     const handleReset = () => {
-      setNotificationMessage("Clearing poses.");
-      setBoxVisible(true);
-      resetConjecture()
-      setTimeout(() => setBoxVisible(false), 1000);
+      const confirmLeave = window.confirm("You didnt save your work. Are you sure you want to leave?");
+      if (confirmLeave) {
+        setNotificationMessage("Clearing poses.");
+        setBoxVisible(true);
+        resetConjecture()
+        setTimeout(() => setBoxVisible(false), 1000);
+      }
     };
 
     // *********************************
@@ -350,7 +352,7 @@ const PoseAuthoring = (props) => {
           fontWeight={800}
           callback={handleSave} // Handle saving current poses to database
         />
-        {/* Done Button build */}
+        {/* Cancel Button build */}
         <RectButton
         height={height * 0.12}
         width={width * 0.20}
@@ -359,9 +361,15 @@ const PoseAuthoring = (props) => {
         color={white}
         fontSize={width * 0.021}
         fontColor={blue}
-        text={"Done"}
+        text={"Cancel"}
         fontWeight={800}
-        callback={conjectureCallback} // Exit Back To Conjecture Module
+        callback={() => {
+            // data hasn't been saved
+            const confirmLeave = window.confirm("You didnt save the poses. Are you sure you want to leave?");
+            if (confirmLeave) {
+              conjectureCallback();
+            }
+          }} // Exit Back To Conjecture Module
       />
         {/* Reset Button build */}
         <RectButton
