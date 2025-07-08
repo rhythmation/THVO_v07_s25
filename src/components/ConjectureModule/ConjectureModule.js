@@ -160,7 +160,15 @@ const ConjectureModule = (props) => {
         backCallback();
       }
     }
-  };  
+  };
+  
+  const handlePublish = async (currentUUID) => {
+    const success = await writeToDatabaseConjecture(currentUUID);
+    if (success) {
+      resetConjectureValues();
+      backCallback();
+    }
+  };
 
   return (
     <>
@@ -262,7 +270,8 @@ const ConjectureModule = (props) => {
           fontWeight={800}
           callback={ () =>{
             writeToDatabaseConjectureDraft(currentConjecture.getCurrentUUID());
-            setIsSaved(true);
+            resetConjectureValues();
+            backCallback();
           }}/>
         {/* Cancel button */}
         <RectButton
@@ -276,8 +285,13 @@ const ConjectureModule = (props) => {
           text={"CANCEL"}
           fontWeight={800}
           callback={() => {
-            resetConjectureValues();
-            backCallback(); // Exit Back the main menu
+            // data hasn't been saved
+            const confirmLeave = window.confirm("You didnt save your work. Are you sure you want to leave?");
+            if (confirmLeave) {
+              // if User confirmed, clear local storage and go back
+              resetConjectureValues();
+              backCallback();
+            }
           }}
         />
         <RectButton
@@ -303,47 +317,31 @@ const ConjectureModule = (props) => {
           fontColor={white}
           text={"PUBLISH"}
           fontWeight={800}
-          callback={ () =>{
-            writeToDatabaseConjecture(currentConjecture.getCurrentUUID());
-            setIsSaved(true);
-            } // publish to database
-          }
+          callback={() => handlePublish(currentConjecture.getCurrentUUID())}
         />
         </>
         )
         :(null) // don't show any of the above things during a preview
       }
 
-      {/* Back Button */}
-      <Button
-        height={height * 0.32}
-        width={width * 0.07}
-        x={width * 0.06}
-        y={height * 0.15}
-        color={red}
-        fontSize={width * 0.015}
-        fontColor={white}
-        text={"BACK"}
-        fontWeight={800}
-        callback={() => {
-          if(editLevel){
-            setGoBackFromLevelEdit("MAIN"); //ensures that the back button works correctly 
-          }
-          if (!isSaved && editLevel) {
-            // If data hasn't been saved
-            const confirmLeave = window.confirm("You didnt save your work. Are you sure you want to leave?");
-            if (confirmLeave) {
-              // if User confirmed, clear local storage and go back
-              resetConjectureValues();
-              backCallback();
-            }
-          } else {
-            // If it is saved, just go back
+      {/* Show BACK button only during preview mode (editLevel === false) */}
+      {!getEditLevel() && (
+        <Button
+          height={height * 0.32}
+          width={width * 0.07}
+          x={width * 0.06}
+          y={height * 0.15}
+          color={red}
+          fontSize={width * 0.015}
+          fontColor={white}
+          text={"BACK"}
+          fontWeight={800}
+          callback={() => {
             resetConjectureValues();
             backCallback();
-          }
-        }}
-      />
+          }}
+        />
+      )}
     </>
   );
 };

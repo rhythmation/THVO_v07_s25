@@ -253,9 +253,12 @@ export const writeToDatabaseConjecture = async (existingUUID) => {
       //set(ref(db, `${conjecturePath}/Author`), userName),
     ];
 
-    return promises && alert("Conjecture successfully published to database.");
+    await Promise.all(promises);
+    alert("Conjecture successfully published to database.");
+    return true;
   } else {
-    return alert("One or more poses are missing. Cannot publish conjecture to database."), false;
+    alert("One or more poses are missing. Cannot publish conjecture to database.");
+    return false;
   }
 };
 
