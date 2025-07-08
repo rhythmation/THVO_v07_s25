@@ -148,182 +148,152 @@ export const writeToDatabasePoseAuth = async (poseData, state, tolerance) => {
 };
 
 export const writeToDatabaseConjecture = async (existingUUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-  let conjectureID;
+  try {
+    const dateObj = new Date();
+    const timestamp = dateObj.toISOString();
+    const conjectureID = existingUUID ?? uuidv4();
 
-  // define the UUID based on whether it exists already or not
-  if(existingUUID == null){
-    conjectureID = uuidv4();
-  }
-  else{
-    conjectureID = existingUUID;
-  }
-  
+    const dataToPush = {};
 
-  // Initialize empty object to store the data inside
-  const dataToPush = {};
+    const isAnyKeyNullOrUndefined = keysToPush.some((key) => {
+      const value = localStorage.getItem(key);
+      return value === null || value === undefined || value.trim() === '';
+    });
 
-  // Fetch values from local storage for each key inside keysToPush 
-  const isAnyKeyNullOrUndefined = keysToPush.some((key) => {
-    const value = localStorage.getItem(key);
-    return value === null || value === undefined || value.trim() === '';
-  });
+    if (isAnyKeyNullOrUndefined) {
+      alert("One or more text values are empty. Cannot publish conjecture to database.");
+      return false;
+    }
 
-  // if any text values are not there alert message and exit
-  if (isAnyKeyNullOrUndefined) {
-    return alert("One or more text values are empty. Cannot publish conjecture to database."), false;
-  }
+    const startJson = localStorage.getItem('start.json');
+    const intermediateJson = localStorage.getItem('intermediate.json');
+    const endJson = localStorage.getItem('end.json');
 
-  // Check if any of the pose data is null before proceeding
-  const startJson = localStorage.getItem('start.json');
-  const intermediateJson = localStorage.getItem('intermediate.json');
-  const endJson = localStorage.getItem('end.json');
+    if (!startJson || !intermediateJson || !endJson) {
+      alert("One or more poses are missing. Cannot publish conjecture to database.");
+      return false;
+    }
 
-  if (
-    startJson !== null && startJson !== undefined &&
-    intermediateJson !== null && intermediateJson !== undefined &&
-    endJson !== null && endJson !== undefined
-  ) {
-    // create pose objects
+    // Create pose objects
     const startPoseData = await createPoseObjects(startJson, 'StartPose', localStorage.getItem('Start Tolerance'));
     const intermediatePoseData = await createPoseObjects(intermediateJson, 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
     const endPoseData = await createPoseObjects(endJson, 'EndPose', localStorage.getItem('End Tolerance'));
 
-    // Define the database path
-    const conjecturePath = `Level/${conjectureID}`;
-
-    // Fetch values from local storage for each key inside keysToPush 
+    // Populate dataToPush with text boxes
     await Promise.all(keysToPush.map(async (key) => {
       const value = localStorage.getItem(key);
-
-      // Check if the value is not null, undefined, or an empty string
-      if (value !== null && value !== undefined && value.trim() !== '') {
-        // uses helper function to create text objects
+      if (value && value.trim() !== '') {
         Object.assign(dataToPush, await createTextObjects(key, value));
       }
     }));
 
-
-    // searrcxh words
+    // Prepare search words
     const searchWordsToPush = {
       "Author Name": dataToPush["Author Name"],
       "Conjecture Description": dataToPush["Conjecture Description"],
       "Conjecture Keywords": dataToPush["Conjecture Keywords"],
       "Conjecture Name": dataToPush["Conjecture Name"]
     };
-    console.log(searchWordsToPush)
 
-    // Extracting values from searchWordsToPush object
-    const searchWordsValues = Object.values(searchWordsToPush);
-    // Concatenating search words into a single lowercase string
-    const concatenatedSearchWords = searchWordsValues.join(" ").toLowerCase();
-
-    // Splitting the concatenated string into individual words
+    const concatenatedSearchWords = Object.values(searchWordsToPush).join(" ").toLowerCase();
     const wordsArray = concatenatedSearchWords.split(" ");
-
-    // Initializing an empty object to store search words
     const searchWordsToPushToDatabase = {};
-
-    // Loop through the words array and set each word as a key in the searchWordsToPushToDatabase object with the word itself as its value
     wordsArray.forEach(word => {
-      if (word !== undefined) {
-        searchWordsToPushToDatabase[word] = word;
-      }
+      if (word) searchWordsToPushToDatabase[word] = word;
     });
 
-    console.log(searchWordsToPushToDatabase)
+    // Firebase path
+    const conjecturePath = `Level/${conjectureID}`;
 
-    // creates promises to push all of the data to the database 
-    // uses set to overwrite the random firebaseKeys with easier to read key names
+    // Push to Firebase
     const promises = [
       set(ref(db, `${conjecturePath}/Time`), timestamp),
       set(ref(db, `${conjecturePath}/AuthorID`), userId),
-      set(ref(db, `${conjecturePath}/UUID`),conjectureID),
+      set(ref(db, `${conjecturePath}/UUID`), conjectureID),
       set(ref(db, `${conjecturePath}/PIN`), localStorage.getItem("PIN")),
       set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
       set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
       set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
       set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
       set(ref(db, `${conjecturePath}/isFinal`), true),
-      set(ref(db,`${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
+      set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
       set(ref(db, `${conjecturePath}/Name`), dataToPush["Conjecture Name"]),
-      // auto set author to logged in user
-      //set(ref(db, `${conjecturePath}/Author`), userName),
     ];
 
     await Promise.all(promises);
     alert("Conjecture successfully published to database.");
     return true;
-  } else {
-    alert("One or more poses are missing. Cannot publish conjecture to database.");
+
+  } catch (error) {
+    console.error("Error writing conjecture to database:", error);
+    alert("An unexpected error occurred. Could not publish conjecture.");
     return false;
   }
 };
 
+
 // save a draft of the current conjecture so it can be published later
 export const writeToDatabaseConjectureDraft = async (existingUUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-  let conjectureID;
+  try {
+    const dateObj = new Date();
+    const timestamp = dateObj.toISOString();
+    const conjectureID = existingUUID ?? uuidv4();
 
-  // define the UUID based on whether it exists already or not
-  if(existingUUID == null){
-    conjectureID = uuidv4();
-  }
-  else{
-    conjectureID = existingUUID;
-  }
+    const dataToPush = {};
+    let noName = false;
 
-  // Initialize empty object to store the data inside
-  const dataToPush = {};
-  let noName = false;
+    // Process text box values
+    await Promise.all(keysToPush.map(async (key) => {
+      const value = localStorage.getItem(key);
 
-  // Fetch values from local storage for each key inside KeysToPush 
-  await Promise.all(keysToPush.map(async (key) => {
-    const value = localStorage.getItem(key);
-    Object.assign(dataToPush, await createTextObjects(key, value));
+      // If the value is undefined or empty, save it as "undefined" and flag noName if needed
+      const sanitizedValue = value === undefined || value === null || value.trim() === '' ? "undefined" : value;
 
-    // If the value is undefined assign the value as undefined in firebase
-    if(value == undefined){
-      Object.assign(dataToPush, await createTextObjects(key, "undefined"));
-      if(key == "Conjecture Name"){
+      Object.assign(dataToPush, await createTextObjects(key, sanitizedValue));
+
+      if (key === "Conjecture Name" && sanitizedValue === "undefined") {
         noName = true;
       }
+    }));
+
+    if (noName) {
+      alert("Please name your level before saving a draft.");
+      return false;
     }
-  }));
 
-  // create pose objects
-  const startPoseData = await createPoseObjects(localStorage.getItem('start.json'), 'StartPose', localStorage.getItem('Start Tolerance'));
-  const intermediatePoseData = await createPoseObjects(localStorage.getItem('intermediate.json'), 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
-  const endPoseData = await createPoseObjects(localStorage.getItem('end.json'), 'EndPose', localStorage.getItem('End Tolerance'));
+    // Create pose data
+    const startJson = localStorage.getItem('start.json');
+    const intermediateJson = localStorage.getItem('intermediate.json');
+    const endJson = localStorage.getItem('end.json');
 
-  // if the level isn't named, alert message and exit
-  if (noName) {
-    return alert("Please name your level before saving a draft."), false;
+    const startPoseData = await createPoseObjects(startJson, 'StartPose', localStorage.getItem('Start Tolerance'));
+    const intermediatePoseData = await createPoseObjects(intermediateJson, 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
+    const endPoseData = await createPoseObjects(endJson, 'EndPose', localStorage.getItem('End Tolerance'));
+
+    // Firebase path
+    const conjecturePath = `Level/${conjectureID}`;
+
+    const promises = [
+      set(ref(db, `${conjecturePath}/Time`), timestamp),
+      set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
+      set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
+      set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
+      set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
+      set(ref(db, `${conjecturePath}/UUID`), conjectureID),
+      set(ref(db, `${conjecturePath}/isFinal`), false),
+    ];
+
+    await Promise.all(promises);
+    alert("Draft saved.");
+    return true;
+
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    alert("An unexpected error occurred. Draft not saved.");
+    return false;
   }
-
-  // Define the database path
-  const conjecturePath = `Level/${conjectureID}`;
-
-  // creates promises to push all of the data to the database 
-  // uses set to overwrite the random firebaseKeys with easier to read key names
-  const promises = [
-    set(ref(db, `${conjecturePath}/Time`), timestamp),
-    set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
-    set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
-    set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
-    set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
-    set(ref(db, `${conjecturePath}/UUID`),conjectureID),
-    set(ref(db, `${conjecturePath}/isFinal`), false),
-    // auto set author to logged in user
-    //set(ref(db, `${conjecturePath}/Author`), userName)
-  ];
-
-  return promises && alert("Draft saved");
 };
+
 
 
 export const deleteFromDatabaseConjecture = async (existingUUID) => {

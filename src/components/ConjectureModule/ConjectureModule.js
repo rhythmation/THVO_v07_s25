@@ -170,6 +170,14 @@ const ConjectureModule = (props) => {
     }
   };
 
+  const handleSaveDraft = async (currentUUID) => {
+    const success = await writeToDatabaseConjectureDraft(currentUUID);
+    if (success) {
+      resetConjectureValues();
+      backCallback();
+    }
+  };
+
   return (
     <>
       <Background height={height * 1.1} width={width} />
@@ -268,11 +276,8 @@ const ConjectureModule = (props) => {
           fontColor={white}
           text={"SAVE DRAFT"}
           fontWeight={800}
-          callback={ () =>{
-            writeToDatabaseConjectureDraft(currentConjecture.getCurrentUUID());
-            resetConjectureValues();
-            backCallback();
-          }}/>
+          callback={() => handleSaveDraft(currentConjecture.getCurrentUUID())}
+          />
         {/* Cancel button */}
         <RectButton
           height={height * 0.13}
