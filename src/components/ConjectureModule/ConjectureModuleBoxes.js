@@ -31,7 +31,9 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
   };
 
 
-  let displayValue = sanitizeValue(raw);  {
+  let displayValue = sanitizeValue(raw);
+
+  if (textKey === 'Author Name' && !displayValue && username) {
     displayValue = username;
   }
 
