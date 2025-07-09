@@ -5,30 +5,38 @@ import { white, black } from "../../utils/colors";
 import InputBox from "../InputBox";
 import RectButton from "../RectButton";
 import { blue, red, green, orange, pink, } from "../../utils/colors";
+import { sanitizeValue } from "../../utils/sanitize";
 
 // =========== HANDLER FUNCTIONS ===========
 
+function safeSetItem(key, val) {
+  if (val !== undefined && val !== null && val.toString().trim() !== '') {
+    localStorage.setItem(key, val);
+  } else {
+    localStorage.removeItem(key);   
+  }
+}
 function handleCurricularName(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Please name your Game:", existingValue);
   if (newValue !== null) {
-    localStorage.setItem(key, newValue);
-    trigger();
+ safeSetItem(key, newValue);    
+ trigger();
   }
 }
 function handleCurricularKeywords(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Keywords make your search easier:", existingValue);
   if (newValue !== null) {
-    localStorage.setItem(key, newValue);
-    trigger();
+ safeSetItem(key, newValue);    
+ trigger();
   }
 }
 
 function handlePinInput(key, trigger) {
   let pin = prompt("Enter a code PIN", localStorage.getItem(key));
   if (pin && !isNaN(pin)) {
-    localStorage.setItem(key, pin);
+safeSetItem(key, pin);
     trigger();
   } else if (pin !== null) {
     alert("PIN must be numeric.");
@@ -49,9 +57,9 @@ function createInputBox(
   renderKey,
   disabled = false
 ) {
-  const raw = localStorage.getItem(textKey);
-  const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
-  const isPlaceholder = !value;
+  const raw  = localStorage.getItem(textKey);
+  const value = sanitizeValue(raw);          // always a string (may be '')
+  const isPlaceholder = value === '';
 
   const placeholderMap = {
     CurricularName: 'Enter game name…',

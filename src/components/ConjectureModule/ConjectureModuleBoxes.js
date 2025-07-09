@@ -4,6 +4,15 @@ import { TextStyle } from "@pixi/text";
 import { yellow, blue, green, white, red, black } from "../../utils/colors";
 import InputBox from "../InputBox";
 import { getEditLevel } from './ConjectureModule';
+import { sanitizeValue } from "../../utils/sanitize";
+
+function safeSetItem(key, val) {
+  if (val !== undefined && val !== null && val.toString().trim() !== '') {
+    localStorage.setItem(key, val);
+  } else {
+    localStorage.removeItem(key);
+  }
+}
 
 function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback, disabled = false, username = null) {
     // fetch value once
@@ -21,13 +30,13 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
     'Multiple Choice 4':     'Choice D',
   };
 
-  let displayValue = raw;
-  if (textKey === 'Author Name' && !raw && username) {
+
+  let displayValue = sanitizeValue(raw);  {
     displayValue = username;
   }
 
-  const isPlaceholder = !displayValue;
-  const text = displayValue
+  const isPlaceholder = displayValue === '';  
+const text = displayValue
     ? (displayValue.length > charLimit ? displayValue.slice(0, charLimit) + '…' : displayValue)
     : placeholderMap[textKey] ?? '';
 
@@ -134,8 +143,9 @@ export const PINBox = (props) => {
 
   // Creates a popup in which the user can set a pin for their conjecture
     /* 1.  local state mirrors storage so UI is stable */
-  const [pinValue, setPinValue] = useState(localStorage.getItem('PIN') || '');
-
+const [pinValue, setPinValue] = useState(
+  sanitizeValue(localStorage.getItem('PIN'))
+);
   /* 2.  popup handler */
   function pinBoxInput() {
     if (!getEditLevel()) return;
@@ -145,8 +155,8 @@ export const PINBox = (props) => {
     if (newPin === null) return;                 // user hit Cancel
     if (isNaN(newPin))  return alert('PIN must be numeric');
 
-    localStorage.setItem('PIN', newPin);
-    setPinValue(newPin);                         // ← triggers rerender, no flicker
+  safeSetItem('PIN', newPin);    
+  setPinValue(newPin);                         // ← triggers rerender, no flicker
   }
 
   // Determine what text to display

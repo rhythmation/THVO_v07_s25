@@ -6,6 +6,7 @@ import InputBox from "../InputBox";
 import RectButton from "../RectButton";
 import { Curriculum } from "./CurricularModule";
 import { setEditLevel, setGoBackFromLevelEdit, currentConjecture } from '../ConjectureModule/ConjectureModule';
+import { sanitizeValue } from "../../utils/sanitize";
 
 function handleCurricularName(key, triggerRerender) {
   const existingValue = localStorage.getItem(key);
@@ -55,9 +56,9 @@ function createInputBox(
   renderKey,
   disabled = false
 ) {
-  const raw = localStorage.getItem(textKey);
-  const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
-  const isPlaceholder = !value;
+  const raw  = localStorage.getItem(textKey);
+  const value = sanitizeValue(raw);   // '' instead of "undefined", null, etc.
+  const isPlaceholder = value === '';
 
   const placeholderMap = {
     CurricularName: 'Enter game name…',
