@@ -88,7 +88,7 @@ export const Curriculum = {
 };
 
 const CurricularModule = (props) => {
-  const { height, width, mainCallback, conjectureCallback, conjectureSelectCallback, storyEditorCallback } = props;
+  const { height, width, userName, mainCallback, conjectureCallback, conjectureSelectCallback, storyEditorCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const resetCurricularValues = () => {

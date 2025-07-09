@@ -21,7 +21,7 @@ import PoseTest from "../ConjectureModule/PoseTest";
 import DataMenu from "./DataMenu.js";
 
 const PlayMenu = (props) => {
-    const {width, height, columnDimensions, rowDimensions, role, logoutCallback} = props;
+    const {width, height, columnDimensions, rowDimensions, userName, role, logoutCallback} = props;
     const [buttonList, setButtonList] = useState([]);
     const [distanceBetweenButtons, setDistanceBetweenButtons] = useState();
     const [startingX, setStartingX] = useState();
@@ -140,6 +140,7 @@ const PlayMenu = (props) => {
                 height={height}
                 columnDimensions={columnDimensions}
                 rowDimensions={rowDimensions}
+                userName={userName}
                 editCallback={() => send("EDIT")}
                 // getGoBackFromLevelEdit should be "MAIN", "LEVELSELECT", or "NEWGAME"
                 backCallback={() => send(getGoBackFromLevelEdit())}
@@ -198,6 +199,7 @@ const PlayMenu = (props) => {
             height={height}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
+            userName={userName}
             mainCallback={() => send("MAIN")} // goes to Home
             conjectureSelectCallback={() => send("LEVELSELECT")}
             conjectureCallback={() => send("NEWLEVEL")}  // preview a level in the game editor

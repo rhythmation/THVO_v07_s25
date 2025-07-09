@@ -145,6 +145,7 @@ const Story = () => {
               height={height}
               columnDimensions={columnDimensions}
               rowDimensions={rowDimensions}
+              userName={userName}
               role={userRole}
               logoutCallback={() => firebase.auth().signOut()}
             />

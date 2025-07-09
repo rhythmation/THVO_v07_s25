@@ -116,7 +116,7 @@ function setLocalStorage(){
  }
 
 const ConjectureModule = (props) => {
-  const { height, width, columnDimensions, rowDimensions, editCallback, backCallback, testCallback } = props;
+  const { height, width, columnDimensions, rowDimensions, userName, editCallback, backCallback, testCallback } = props;
 
   const [state, send] = useMachine(ConjectureEditorMachine);
   const [isSaved, setIsSaved] = useState(false);
