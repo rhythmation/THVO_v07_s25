@@ -25,15 +25,6 @@ function handleCurricularKeywords(key, trigger) {
   }
 }
 
-function handleCurricularAuthor(key, trigger) {
-  const existingValue = localStorage.getItem(key);
-  const newValue = prompt("Please add an Author name:", existingValue);
-  if (newValue !== null) {
-    localStorage.setItem(key, newValue);
-    trigger();
-  }
-}
-
 function handlePinInput(key, trigger) {
   let pin = prompt("Enter a code PIN", localStorage.getItem(key));
   if (pin && !isNaN(pin)) {
@@ -55,7 +46,8 @@ function createInputBox(
   totalWidth,
   totalHeight,
   callback,
-  renderKey
+  renderKey,
+  disabled = false
 ) {
   const raw = localStorage.getItem(textKey);
   const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
@@ -65,34 +57,33 @@ function createInputBox(
     CurricularName: 'Enter game name…',
     CurricularAuthor: 'Author',
     CurricularKeywords: 'keyword1, keyword2',
-    CurricularPIN: '4‑digit PIN',
+    CurricularPIN: '4-digit PIN',
   };
 
-  const displayText = value
+  const text = value
     ? value.length > charLimit
       ? value.slice(0, charLimit) + '…'
       : value
     : placeholderMap[textKey] ?? '';
 
-  const boxHeight = totalHeight * scaleFactor;
-  const boxWidth = totalWidth * widthMultiplier;
-  const xPos = totalWidth * xMultiplier;
-  const yPos = totalHeight * yMultiplier;
+  const height = totalHeight * scaleFactor;
+  const width = totalWidth * widthMultiplier;
+  const x = totalWidth * xMultiplier;
+  const y = totalHeight * yMultiplier;
 
   return (
     <InputBox
-      key={`${textKey}-${renderKey}`}      
-      height={boxHeight}
-      width={boxWidth}
-      x={xPos}
-      y={yPos}
-      color={white}
+      key={`${textKey}-${renderKey}`}
+      height={height}
+      width={width}
+      x={x}
+      y={y}
+      color={disabled ? blue : white}
       fontSize={totalWidth * 0.012}
-      fontColor={isPlaceholder ? '#888' : black}
-      text={displayText}
-      fontWeight={500}
-      outlineColor={black}
-      callback={() => callback(textKey)}
+      fontColor={disabled ? white : (isPlaceholder ? '#888' : black)}
+      text={text}
+      fontWeight={disabled ? 1000 : 500}
+      callback={disabled ? null : () => callback(textKey)}
     />
   );
 }
@@ -278,8 +269,9 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularAuthor",
         width,
         height,
-        (key) => handleCurricularAuthor(key, triggerRerender),
-        renderKey
+        null,
+        renderKey,
+        true
       )}
       {createInputBox(
         4,
