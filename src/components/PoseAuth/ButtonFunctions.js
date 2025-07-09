@@ -49,7 +49,7 @@ function isPoseValid(poseData, state) {
 // to temporarily save the poses, only when the uses 'Save' will the poses be pushed.
 export function capturePose(poseData, state) {
    if (!isPoseValid(poseData, state)) {
-      return; // Block saving invalid poses
+      return false; // Block saving invalid poses
    }
 
    const poseJson = JSON.stringify(poseData);
@@ -61,6 +61,7 @@ export function capturePose(poseData, state) {
    } else if (state === 'end') {
       localStorage.setItem('end.json', poseJson);
    }
+   return true;
 }
 
 // Saves all active poses in localStorage to Firebase and resets localStorage.

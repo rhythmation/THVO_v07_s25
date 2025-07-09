@@ -123,15 +123,14 @@ const handleReset = () => {
       }
     };
 
-
-
-
     // Function that handles capture phase when timer turns to zero.
     const handleCapture = () => {
-      setNotificationMessage("Captured pose.");
-      setBoxVisible(true);
-      capturePose(poseData, state.value); // Implement Pose-Capturing
-      setTimeout(() => setBoxVisible(false), 1000);
+      const success = capturePose(poseData, state.value);
+      if (success) {
+        setNotificationMessage("Captured pose.");
+        setBoxVisible(true);
+        setTimeout(() => setBoxVisible(false), 1000);
+      }
     };
 
     // Function that handles error massage is user is to close to screen during capture.
