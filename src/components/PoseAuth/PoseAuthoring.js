@@ -253,20 +253,7 @@ const handleReset = () => {
           fontWeight={800}
           callback={() => startTolerance()}   // Enter tolerance for start box
         />
-        <IntermediateBox height={height} width={width}  x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} />
-        {/* Intermidiate box edit button build */}
-        <RectButton
-          height={height * 0.05}
-          width={width * 0.10}
-          x={width * 0.25}
-          y={height * 0.43}
-          color={white}
-          fontSize={width * 0.014}
-          fontColor={black}
-          text={"EDIT"}
-          fontWeight={800}
-          callback={() => send("INTERMEDIATE")}   // Send INTERMIDIATE state to poseauthMachine
-        />
+        <IntermediateBox height={height} width={width}  x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} intermediateCallback={() => send("INTERMEDIATE")} />
         {/* Intermidiate tolerance button build */}
         <RectButton
           height={height * 0.05}
@@ -280,20 +267,7 @@ const handleReset = () => {
           fontWeight={800}
           callback={() => intermediateTolerance()}    // Enter tolerance for intermidiate box
         />
-        <EndBox height={height} width={width}  x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} />
-        {/* End box edit button build */}
-        <RectButton
-          height={height * 0.05}
-          width={width * 0.10}
-          x={width * 0.25}
-          y={height * 0.67}
-          color={white}
-          fontSize={width * 0.014}
-          fontColor={black}
-          text={"EDIT"}
-          fontWeight={800}
-          callback={() => send("END")}    // Send END state to poseauthMachine
-        />
+        <EndBox height={height} width={width}  x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} endCallback={() => send("END")}/>
         {/* End box tolerance button build */}
         <RectButton
           height={height * 0.05}

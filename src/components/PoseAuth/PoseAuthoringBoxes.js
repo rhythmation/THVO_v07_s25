@@ -152,73 +152,135 @@ export const StartBox = (props) => {
     props.startCallback();
   };
 
-  return (
-    <Container>
-      {/* Make the main graphics component clickable */}
-      <Graphics 
-        draw={drawRectangle}
-        interactive={true}
-        buttonMode={true} // This makes the cursor change to pointer in older versions
-        click={handleBoxClick} // Use 'click' instead of 'pointerdown'
-      />
-      <Graphics draw={drawTextBox} />
-      
-      <Text
-        text={"Start Pose"}
-        x={props.inCE ? props.width * 0.599 : props.width * 0.197}
-        y={props.inCE ? props.height * 0.997 : props.height * 0.39}
-        style={
-          new TextStyle({
-            align: "center",
-            fontFamily: props.inCE ? "Arial" : "Futura",
-            fontSize: props.width * 0.02,
-            fontWeight: 800,
-            fill: [green],
-            letterSpacing: 0,
-          })
-        }
-        anchor={0.5}
-      />
-      
-      {/* Draw green outline if box is selected */}
-      {props.boxState === "start" && (
-        <Graphics draw={drawBoxOutline} />
-      )}
-      
-      {/* Rest of your existing code for pose display and tolerance */}
-      {localStorage.getItem('start.json') !== null && (
-        <Pose
-          poseData={JSON.parse(localStorage.getItem('start.json'))}
-          colAttr={{
-            x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
-            y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
-            width: rectangleWidth * 0.5,
-            height: rectangleWidth * 0.47,
-          }}
-          similarityScores={props.similarityScores}
-        />
-      )}
-      
-      {localStorage.getItem('Start Tolerance') !== null && (
+  if (props.inCE === true) {  // positions the text, outline box, and tolerance text for the Conjecture Editor
+    return (
+      <Container>
+        <Graphics draw={drawRectangle} />
+        <Graphics draw={drawTextBox} />
         <Text
-          text={localStorage.getItem('Start Tolerance')}
-          x={props.inCE ? props.width * 0.528 : props.width * 0.125}
-          y={props.inCE ? props.height * 0.955 : props.height * 0.345}
+          text={"Start Pose"}
+          x={props.width * 0.599}
+          y={props.height * 0.997}
           style={
             new TextStyle({
               align: "center",
-              fontFamily: props.inCE ? "Arial" : "Futura",
-              fontSize: props.width * 0.016,
+              fontFamily: "Arial",
+              fontSize: props.width * 0.02,
               fontWeight: 800,
-              fill: [black],
+              fill: [green],
               letterSpacing: 0,
             })
           }
           anchor={0.5}
         />
-      )}
-    </Container>
-  );
+        
+        {/* Draw green outline if box is selected */}
+        {props.boxState === "start" && (
+          <Graphics draw={drawBoxOutline} />
+        )}
+        
+        {localStorage.getItem('start.json') !== null && (
+          <Pose
+            poseData={JSON.parse(localStorage.getItem('start.json'))}
+            colAttr={{
+              x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
+              y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
+              width: rectangleWidth * 0.5,
+              height: rectangleWidth * 0.47,
+            }}
+            similarityScores={props.similarityScores}
+          />
+        )}
+        
+        {localStorage.getItem('Start Tolerance') !== null && (
+          <Text
+            text={localStorage.getItem('Start Tolerance')}
+            x={props.width * 0.528}
+            y={props.height * 0.955}
+            style={
+              new TextStyle({
+                align: "center",
+                fontFamily: "Arial",
+                fontSize: props.width * 0.016,
+                fontWeight: 800,
+                fill: [black],
+                letterSpacing: 0,
+              })
+            }
+            anchor={0.5}
+          />
+        )}
+      </Container>
+    );
+  }
+  else {  // positions the text, outline box, and tolerance text for the Pose Sequence Editor
+    return (
+      <Container>
+        {/* Make the main graphics component clickable only when not in CE */}
+        <Graphics 
+          draw={drawRectangle}
+          interactive={true}
+          buttonMode={true}
+          click={handleBoxClick}
+        />
+        <Graphics draw={drawTextBox} />
+        
+        <Text
+          text={"Start Pose"}
+          x={props.width * 0.197}
+          y={props.height * 0.39}
+          style={
+            new TextStyle({
+              align: "center",
+              fontFamily: "Futura",
+              fontSize: props.width * 0.02,
+              fontWeight: 800,
+              fill: [green],
+              letterSpacing: 0,
+            })
+          }
+          anchor={0.5}
+        />
+        
+        {/* Draw green outline if box is selected */}
+        {props.boxState === "start" && (
+          <Graphics draw={drawBoxOutline} />
+        )}
+        
+        {localStorage.getItem('start.json') !== null && (
+          <Pose
+            poseData={JSON.parse(localStorage.getItem('start.json'))}
+            colAttr={{
+              x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
+              y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
+              width: rectangleWidth * 0.5,
+              height: rectangleWidth * 0.47,
+            }}
+            similarityScores={props.similarityScores}
+          />
+        )}
+        
+        {localStorage.getItem('Start Tolerance') !== null && (
+          <Text
+            text={localStorage.getItem('Start Tolerance')}
+            x={props.width * 0.125}
+            y={props.height * 0.345}
+            style={
+              new TextStyle({
+                align: "center",
+                fontFamily: "Futura",
+                fontSize: props.width * 0.016,
+                fontWeight: 800,
+                fill: [black],
+                letterSpacing: 0,
+              })
+            }
+            anchor={0.5}
+          />
+        )}
+      </Container>
+    );
+  }
 };
 
 export const IntermediateBox = (props) => {
@@ -232,8 +294,8 @@ export const IntermediateBox = (props) => {
   // Create a drawing function for the IntermediateBox
   const drawRectangle = (g) => {
     g.clear();
-    g.beginFill(yellow);      // Fill IntermediateBox with yellow
-    g.lineStyle(4, black, 1); // Outline color (black) and thickness (4)
+    g.beginFill(yellow);
+    g.lineStyle(4, black, 1);
 
     // Use g.moveTo and g.lineTo to draw the IntermediateBox outline
     g.moveTo(rectangleX, rectangleY);
@@ -266,6 +328,12 @@ export const IntermediateBox = (props) => {
     g.lineTo(rectangleX, rectangleY + rectangleHeight);
     g.lineTo(rectangleX, rectangleY);
   }
+
+  const handleBoxClick = () => {
+    if (props.intermediateCallback) {
+      props.intermediateCallback();
+    }
+  };
 
   if (props.inCE === true) {  // positions the text, outline box, and tolerance text for the Conjecture Editor
     return (
@@ -330,7 +398,12 @@ export const IntermediateBox = (props) => {
   else {  // positions the text, outline box, and tolerance text for the Pose Sequence Editor
     return (
       <Container>
-        <Graphics draw={drawRectangle} />
+        <Graphics 
+          draw={drawRectangle}
+          interactive={true}
+          buttonMode={true}
+          click={handleBoxClick}
+        />
         <Graphics draw={drawTextBox} />
         <Text
             text={"Intermediate Pose"}
@@ -435,6 +508,12 @@ export const EndBox = (props) => {
     g.lineTo(rectangleX, rectangleY);
   }
 
+  const handleBoxClick = () => {
+    if (props.endCallback) {
+      props.endCallback();
+    }
+  };
+
   if (props.inCE === true) {  // positions the text, outline box, and tolerance text for the Conjecture Editor
     return (
       <Container>
@@ -498,7 +577,12 @@ export const EndBox = (props) => {
   else {  // positions the text, outline box, and tolerance text for the Pose Sequence Editor
     return (
       <Container>
-        <Graphics draw={drawRectangle} />
+        <Graphics 
+          draw={drawRectangle}
+          interactive={true}
+          buttonMode={true}
+          click={handleBoxClick}
+        />
         <Graphics draw={drawTextBox} />
         <Text
             text={"End Pose"}
