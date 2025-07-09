@@ -71,6 +71,10 @@ export const currentConjecture = {
 function setLocalStorage(){ 
       const conj = currentConjecture.getCurrentConjecture() ?? {};
 
+      if (!localStorage.getItem('Correct Answer')) {
+        localStorage.setItem('Correct Answer', 'A');
+      }
+
       if (Object.keys(conj).length === 0) return;
 
   // 1. Text-box values
