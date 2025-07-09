@@ -164,7 +164,7 @@ const ConjectureSelectModule = (props) => {
             color={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? neonGreen : white}
             fontSize={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? totalWidth * fontSizeMultiplier / 1.1 : totalWidth * fontSizeMultiplier / 1.3}
             fontColor={selectedConjecture && selectedConjecture.UUID === conjecture.UUID ? white : blue}
-            text={conjecture["Text Boxes"]["Conjecture Keywords"]}
+            text={conjecture["Text Boxes"]["Conjecture Keywords"] === "undefined" ? '' : conjecture["Text Boxes"]["Conjecture Keywords"]}
             fontWeight="bold"
             callback={() => handleConjectureSelection(conjecture)}
           />
