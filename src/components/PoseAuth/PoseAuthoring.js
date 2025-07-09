@@ -10,6 +10,9 @@ import { capturePose, saveConjecture, resetConjecture } from "./ButtonFunctions"
 import { calculateFaceDepth } from "../Pose/landmark_utilities";
 import { Text, Graphics } from '@inlet/react-pixi';
 import usePoseData from "../utilities/PoseData";
+import { useRef } from "react";
+
+
 
 // Defining a NotificationBox component using Pixi components, used for all notification pop-ups
 const NotificationBox = ({ message, textSize }) => {
@@ -54,6 +57,24 @@ const PoseAuthoring = (props) => {
     // State to indicate whether we should capture the pose
     const [shouldCapture, setShouldCapture] = useState(false);
 
+      const initialPosesRef = useRef({
+    start:        localStorage.getItem("start.json"),
+    intermediate: localStorage.getItem("intermediate.json"),
+    end:          localStorage.getItem("end.json"),
+  });
+
+  const restoreOriginalPoses = () => {
+    const poses = initialPosesRef.current;
+    ["start", "intermediate", "end"].forEach((key) => {
+      const lsKey = `${key}.json`;
+      if (poses[key] != null) {
+        localStorage.setItem(lsKey, poses[key]);
+      } else {
+        localStorage.removeItem(lsKey);
+      }
+    });
+  };
+
     // *********************************
     // Handler functions
     // *********************************
@@ -90,6 +111,21 @@ const PoseAuthoring = (props) => {
       }, 1000);
     };
 
+const handleReset = () => {
+      const confirmLeave = window.confirm(
+        "You didn't save your work. Are you sure you want to leave?"
+      );
+      if (confirmLeave) {
+        setNotificationMessage("Clearing poses.");
+        setBoxVisible(true);
+        resetConjecture();
+        setTimeout(() => setBoxVisible(false), 1000);
+      }
+    };
+
+
+
+
     // Function that handles capture phase when timer turns to zero.
     const handleCapture = () => {
       setNotificationMessage("Captured pose.");
@@ -117,15 +153,7 @@ const PoseAuthoring = (props) => {
     };
 
     // Function that handles reseting all poses and tolerance when clicked
-    const handleReset = () => {
-      const confirmLeave = window.confirm("You didnt save your work. Are you sure you want to leave?");
-      if (confirmLeave) {
-        setNotificationMessage("Clearing poses.");
-        setBoxVisible(true);
-        resetConjecture()
-        setTimeout(() => setBoxVisible(false), 1000);
-      }
-    };
+          
 
     // *********************************
     // Tolerance functions
@@ -354,23 +382,25 @@ const PoseAuthoring = (props) => {
         />
         {/* Cancel Button build */}
         <RectButton
-        height={height * 0.12}
-        width={width * 0.20}
-        x={width * 0.66}
-        y={height * 0.83}
-        color={white}
-        fontSize={width * 0.021}
-        fontColor={blue}
-        text={"Cancel"}
-        fontWeight={800}
-        callback={() => {
-            // data hasn't been saved
-            const confirmLeave = window.confirm("You didnt save the poses. Are you sure you want to leave?");
-            if (confirmLeave) {
-              conjectureCallback();
-            }
-          }} // Exit Back To Conjecture Module
-      />
+  height={height * 0.12}
+  width={width * 0.20}
+  x={width * 0.66}
+  y={height * 0.83}
+  color={white}
+  fontSize={width * 0.021}
+  fontColor={blue}
+  text={"Cancel"}
+  fontWeight={800}
+  callback={() => {
+    const confirmLeave = window.confirm(
+      "You didn't save the poses. Are you sure you want to leave?"
+    );
+    if (confirmLeave) {
+      restoreOriginalPoses();   // put old poses back
+      conjectureCallback();     // return to Level Editor
+    }
+  }}
+/>
         {/* Reset Button build */}
         <RectButton
           height={height * 0.12}
