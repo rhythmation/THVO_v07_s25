@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Graphics, Text } from "@inlet/react-pixi";
 import { TextStyle } from "@pixi/text";
 import { yellow, blue, green, white, red, black } from "../../utils/colors";
 import InputBox from "../InputBox";
 import { getEditLevel } from './ConjectureModule';
 
-function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback) {
+function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback, disabled = false, username = null) {
     // fetch value once
     const raw = localStorage.getItem(textKey);
 
@@ -21,9 +21,14 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
     'Multiple Choice 4':     'Choice D',
   };
 
-  const isPlaceholder = !raw;
-  const text = raw
-    ? (raw.length > charLimit ? raw.slice(0, charLimit) + '…' : raw)
+  let displayValue = raw;
+  if (textKey === 'Author Name' && !raw && username) {
+    displayValue = username;
+  }
+
+  const isPlaceholder = !displayValue;
+  const text = displayValue
+    ? (displayValue.length > charLimit ? displayValue.slice(0, charLimit) + '…' : displayValue)
     : placeholderMap[textKey] ?? '';
 
   const height = totalHeight * scaleFactor;
@@ -31,20 +36,18 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
   const x = totalWidth * xMultiplier;
   const y = totalHeight * yMultiplier;
 
-  
   return (
     <InputBox
       height={height}
       width={width}
       x={x}
       y={y}
-      color={white}
+      color={disabled ? blue : white}
       fontSize={totalWidth * 0.012}
-      fontColor={isPlaceholder ? '#888' : black}
+      fontColor={disabled ? white : (isPlaceholder ? '#888' : black)}
       text={text}
-      fontWeight={500}
-      outlineColor={black}
-      callback={() => {
+      fontWeight={disabled ? 1000 : 500}
+      callback={disabled ? null : () => {
         if(getEditLevel())
           inputCallback(textKey);
       }}
@@ -53,8 +56,15 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
 }
 
 export const NameBox = (props) => {
-  const { height, width } = props;
+  const { height, width, username, boxState } = props;
   const [, setRefresh] = useState(0);
+
+  // Auto-populate author name with username if no previous author exists
+  useEffect(() => {
+    if (username && !localStorage.getItem('Author Name')) {
+      localStorage.setItem('Author Name', username);
+    }
+  }, [username]);
 
   let titleText = "";
   if(getEditLevel())
@@ -80,7 +90,7 @@ export const NameBox = (props) => {
       {createInputBox(220, 0.19, 1.595, 0.134, 0.75, 'Multiple Choice 3', width, height, handleBoxInput)}
       {createInputBox(220, 0.19, 1.595, 0.134, 0.84, 'Multiple Choice 4', width, height, handleBoxInput)}
       {createInputBox(60, 0.10, 0.54, 0.143+ 0.062, 0.136-.050, 'Conjecture Name', width, height, handleBoxInput)}
-      {createInputBox(220, 0.10, .3, 0.46+ 0.062, 0.136-.050, 'Author Name', width, height, handleBoxInput)}
+      {createInputBox(220, 0.10, .3, 0.46+ 0.062, 0.136-.050, 'Author Name', width, height, null, true, username)}
       {createInputBox(220, 0.30, 1.595, 0.134, 0.175-.050, 'Conjecture Description', width, height, handleBoxInput)}
       {createInputBox(220, 0.10, 1.268, 0.203 + 0.062, 0.295-.050, 'Conjecture Keywords', width, height, handleBoxInput)}
 

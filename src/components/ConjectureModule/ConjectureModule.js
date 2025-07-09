@@ -187,7 +187,7 @@ const ConjectureModule = (props) => {
   return (
     <>
       <Background height={height * 1.1} width={width} />
-      <NameBox height={height} width={width} boxState={state.value} />
+      <NameBox height={height} width={width} boxState={state.value} username={userName}/>
       <PINBox height={height} width={width} />
       <StartBox height={height * 0.5} width={width * 0.5} x={5} y={4.6} boxState={null} similarityScores={null} inCE={true} />
       <IntermediateBox height={height * 0.5} width={width * 0.5} x={9} y={1.906} boxState={null} similarityScores={null} inCE={true} />
