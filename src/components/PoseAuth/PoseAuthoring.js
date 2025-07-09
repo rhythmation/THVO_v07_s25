@@ -239,20 +239,7 @@ const handleReset = () => {
       <>
         <Background height={height} width={width} />
         <MainBox height={height} width={width} />
-        <StartBox height={height} width={width} x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} />
-        {/* Start box edit button build */}
-        <RectButton
-          height={height * 0.05}  
-          width={width * 0.10}    
-          x={width * 0.25}
-          y={height * .19}
-          color={white}
-          fontSize={width * 0.014}
-          fontColor={black}
-          text={"EDIT"}
-          fontWeight={800}
-          callback={() => send("START")}  // Send START state to poseauthMachine
-        />
+        <StartBox height={height} width={width} x={1} y={1} boxState={state.value} similarityScores={poseSimilarity} inCE={false} startCallback={() => send("START")}/>
         {/* Start box tolerance button build */}
         <RectButton
           height={height * 0.05}  

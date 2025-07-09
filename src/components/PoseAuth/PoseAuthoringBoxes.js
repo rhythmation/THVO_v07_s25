@@ -109,171 +109,116 @@ export const MainBox = (props) => {
 };
 
 export const StartBox = (props) => {
-  // Box holding starting pose in conjecture
-  // Calculate the position and dimensions of the StartBox
   const rectangleX = props.width * 0.1 * props.x;
   const rectangleY = props.height * 0.17 * props.y;
-  const rectangleWidth = props.width * 0.2; // Adjust the width as needed,    maintain aspect ratio => windows.devicepixelratio
-  const rectangleHeight = props.height * 0.2; // Adjust the height as needed
+  const rectangleWidth = props.width * 0.2;
+  const rectangleHeight = props.height * 0.2;
 
-  // Create a drawing function for the StartBox
   const drawRectangle = (g) => {
     g.clear();
-    g.beginFill(yellow);      // Fill StartBox with yellow
-    g.lineStyle(4, black, 1); // Outline color (black) and thickness (4)
-
-    // Use g.moveTo and g.lineTo to draw the StartBox outline
+    g.beginFill(yellow);
+    g.lineStyle(4, black, 1);
+    
     g.moveTo(rectangleX, rectangleY);
     g.lineTo(rectangleX + rectangleWidth, rectangleY);
     g.lineTo(rectangleX + rectangleWidth, rectangleY + rectangleHeight);
     g.lineTo(rectangleX, rectangleY + rectangleHeight);
-    g.lineTo(rectangleX, rectangleY); // Close the path by returning to the starting point
+    g.lineTo(rectangleX, rectangleY);
     g.endFill();
   };
-  
-  const drawTextBox = (g) => {  // Draws a black box around the text
-      g.clear();
-      g.beginFill(black);
-      if (props.inCE === true) {
-        g.drawRect(props.width * 0.498, props.height * 0.976, props.width * 0.2045, props.height * 0.04);  // (x, y, width, height)
-      }
-      else {
-        g.drawRect(props.width * 0.099, props.height * 0.37, props.width * 0.202, props.height * 0.04);  // (x, y, width, height)
-      }
-      g.endFill();
-    };
 
-    const drawBoxOutline = (g) => {
-      g.clear();
-      g.lineStyle(7, green);
-  
-      g.moveTo(rectangleX, rectangleY);
-      g.lineTo(rectangleX + rectangleWidth, rectangleY);
-      g.lineTo(rectangleX + rectangleWidth, rectangleY + rectangleHeight);
-      g.lineTo(rectangleX, rectangleY + rectangleHeight);
-      g.lineTo(rectangleX, rectangleY);
+  const drawTextBox = (g) => {
+    g.clear();
+    g.beginFill(black);
+    if (props.inCE === true) {
+      g.drawRect(props.width * 0.498, props.height * 0.976, props.width * 0.2045, props.height * 0.04);
+    } else {
+      g.drawRect(props.width * 0.099, props.height * 0.37, props.width * 0.202, props.height * 0.04);
     }
+    g.endFill();
+  };
 
-    if (props.inCE === true) {  // positions the text, outline box, and tolerance text for the Conjecture Editor
-      return (
-        <Container>
-          <Graphics draw={drawRectangle} />
-          <Graphics draw={drawTextBox} />
-          <Text
-              text={"Start Pose"}
-              x={props.width * 0.599}
-              y={props.height * 0.997}
-              style={
-                new TextStyle({
-                  align: "center",
-                  fontFamily: "Arial",
-                  fontSize: props.width * 0.02,
-                  fontWeight: 800,
-                  fill: [green],
-                  letterSpacing: 0,
-                })
-              }
-              anchor={0.5}
-            />
-            {/* Draw green outline if box is EDIT is clicked */}
-            {props.boxState === "start" && (
-            <Graphics draw={drawBoxOutline} />
-          )}
-          {/* Pose is displayed if user captures start pose */}
-          {localStorage.getItem('start.json') !== null && (
-            <Pose
-              poseData={JSON.parse(localStorage.getItem('start.json'))}
-              colAttr={{
-                x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
-                y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
-                width: rectangleWidth * 0.5,
-                height: rectangleWidth * 0.47,
-              }}
-              similarityScores={props.similarityScores}
-            />
-            )}
-          {/* Display tolerance when entered */}
-          {localStorage.getItem('Start Tolerance') !== null && (
-            <Text
-            text={localStorage.getItem('Start Tolerance')}
-            x={props.width * 0.528}
-            y={props.height * 0.955}
-            style={
-              new TextStyle({
-                align: "center",
-                fontFamily: "Arial",
-                fontSize: props.width * 0.016,
-                fontWeight: 800,
-                fill: [black],
-                letterSpacing: 0,
-              })
-            }
-            anchor={0.5}
-          />
-          )}
-        </Container>
-      );
-    }
-    else {  // positions the text, outline box, and tolerance text for the Pose Sequence Editor
-      return (
-        <Container>
-          <Graphics draw={drawRectangle} />
-          <Graphics draw={drawTextBox} />
-          <Text
-              text={"Start Pose"}
-              x={props.width * 0.197}
-              y={props.height * 0.39}
-              style={
-                new TextStyle({
-                  align: "center",
-                  fontFamily: "Futura",
-                  fontSize: props.width * 0.02,
-                  fontWeight: 800,
-                  fill: [green],
-                  letterSpacing: 0,
-                })
-              }
-              anchor={0.5}
-            />
-            {/* Draw green outline if box is EDIT is clicked */}
-            {props.boxState === "start" && (
-            <Graphics draw={drawBoxOutline} />
-          )}
-          {/* Pose is displayed if user captures start pose */}
-          {localStorage.getItem('start.json') !== null && (
-            <Pose
-              poseData={JSON.parse(localStorage.getItem('start.json'))}
-              colAttr={{
-                x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
-                y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
-                width: rectangleWidth * 0.5,
-                height: rectangleWidth * 0.47,
-              }}
-              similarityScores={props.similarityScores}
-            />
-            )}
-          {/* Display tolerance when entered */}
-          {localStorage.getItem('Start Tolerance') !== null && (
-            <Text
-            text={localStorage.getItem('Start Tolerance')}
-            x={props.width * 0.125}
-            y={props.height * 0.345}
-            style={
-              new TextStyle({
-                align: "center",
-                fontFamily: "Futura",
-                fontSize: props.width * 0.016,
-                fontWeight: 800,
-                fill: [black],
-                letterSpacing: 0,
-              })
-            }
-            anchor={0.5}
-          />
-          )}
-        </Container>
-      );
-    }
+  const drawBoxOutline = (g) => {
+    g.clear();
+    g.lineStyle(7, green);
+    g.moveTo(rectangleX, rectangleY);
+    g.lineTo(rectangleX + rectangleWidth, rectangleY);
+    g.lineTo(rectangleX + rectangleWidth, rectangleY + rectangleHeight);
+    g.lineTo(rectangleX, rectangleY + rectangleHeight);
+    g.lineTo(rectangleX, rectangleY);
+  };
+
+  const handleBoxClick = () => {
+    props.startCallback();
+  };
+
+  return (
+    <Container>
+      {/* Make the main graphics component clickable */}
+      <Graphics 
+        draw={drawRectangle}
+        interactive={true}
+        buttonMode={true} // This makes the cursor change to pointer in older versions
+        click={handleBoxClick} // Use 'click' instead of 'pointerdown'
+      />
+      <Graphics draw={drawTextBox} />
+      
+      <Text
+        text={"Start Pose"}
+        x={props.inCE ? props.width * 0.599 : props.width * 0.197}
+        y={props.inCE ? props.height * 0.997 : props.height * 0.39}
+        style={
+          new TextStyle({
+            align: "center",
+            fontFamily: props.inCE ? "Arial" : "Futura",
+            fontSize: props.width * 0.02,
+            fontWeight: 800,
+            fill: [green],
+            letterSpacing: 0,
+          })
+        }
+        anchor={0.5}
+      />
+      
+      {/* Draw green outline if box is selected */}
+      {props.boxState === "start" && (
+        <Graphics draw={drawBoxOutline} />
+      )}
+      
+      {/* Rest of your existing code for pose display and tolerance */}
+      {localStorage.getItem('start.json') !== null && (
+        <Pose
+          poseData={JSON.parse(localStorage.getItem('start.json'))}
+          colAttr={{
+            x: (rectangleX + (rectangleWidth - (rectangleWidth * 0.5)) / 1.75),
+            y: (rectangleY + (rectangleHeight - (rectangleHeight * 0.95)) / 1.75),
+            width: rectangleWidth * 0.5,
+            height: rectangleWidth * 0.47,
+          }}
+          similarityScores={props.similarityScores}
+        />
+      )}
+      
+      {localStorage.getItem('Start Tolerance') !== null && (
+        <Text
+          text={localStorage.getItem('Start Tolerance')}
+          x={props.inCE ? props.width * 0.528 : props.width * 0.125}
+          y={props.inCE ? props.height * 0.955 : props.height * 0.345}
+          style={
+            new TextStyle({
+              align: "center",
+              fontFamily: props.inCE ? "Arial" : "Futura",
+              fontSize: props.width * 0.016,
+              fontWeight: 800,
+              fill: [black],
+              letterSpacing: 0,
+            })
+          }
+          anchor={0.5}
+        />
+      )}
+    </Container>
+  );
 };
 
 export const IntermediateBox = (props) => {
