@@ -25,15 +25,6 @@ function handleCurricularKeywords(key, triggerRerender) {
   }
 }
 
-function handleCurricularAuthor(key, triggerRerender) {
-  const existingValue = localStorage.getItem(key);
-  const newValue = prompt("Please add an Author name:", existingValue);
-  if (newValue !== null) {
-    localStorage.setItem(key, newValue);
-    triggerRerender();
-  }
-}
-
 function handlePinInput(key, triggerRerender) {
   let pin = prompt("Enter a code PIN", localStorage.getItem(key));
   if (pin && !isNaN(pin)) {
@@ -61,7 +52,8 @@ function createInputBox(
   totalWidth,
   totalHeight,
   callback,
-  renderKey
+  renderKey,
+  disabled = false
 ) {
   const raw = localStorage.getItem(textKey);
   const value = raw === null || raw === '' || raw === 'undefined' ? null : raw;
@@ -92,13 +84,12 @@ function createInputBox(
       width={width}
       x={x}
       y={y}
-      color={white}
+      color={disabled ? blue : white}
       fontSize={totalWidth * 0.012}
-      fontColor={isPlaceholder ? '#888' : black}
+      fontColor={disabled ? white : (isPlaceholder ? '#888' : black)}
       text={text}
-      fontWeight={500}
-      outlineColor={black}
-      callback={() => callback(textKey)}
+      fontWeight={disabled ? 1000 : 500}
+      callback={disabled ? null : () => callback(textKey)}
     />
   );
 }
@@ -269,15 +260,26 @@ const CurriculumList = ({
 };
 
 export const CurricularContentEditor = (props) => {
-  const { height, width, conjectureCallback } = props;
+  const { height, width, userName, conjectureCallback} = props;
   const [renderKey, setRenderKey] = useState(0);
   const triggerRerender = () => setRenderKey(prev => prev + 1);
+
+  useEffect(() => {
+    if (userName) {
+      // Only set if not already set or if it's empty
+      const currentAuthor = localStorage.getItem('CurricularAuthor');
+      if (!currentAuthor || currentAuthor === '' || currentAuthor === 'undefined') {
+        localStorage.setItem('CurricularAuthor', userName);
+        triggerRerender();
+      }
+    }
+  }, [userName]);
 
   return (
     <>
       {createInputBox(60, 0.10, 0.55, 0.223, 0.106, 'CurricularName', width, height, (key) => handleCurricularName(key, triggerRerender), renderKey)}
       {createInputBox(180, 0.10, 1, 0.210, 0.17, 'CurricularKeywords', width, height, (key) => handleCurricularKeywords(key, triggerRerender), renderKey)}
-      {createInputBox(220, 0.10, 0.8, 0.55, 0.106, 'CurricularAuthor', width, height, (key) => handleCurricularAuthor(key, triggerRerender), renderKey)}
+      {createInputBox(220, 0.10, 0.8, 0.55, 0.106, 'CurricularAuthor', width, height, null, renderKey, true)}
       {createInputBox(4, 0.10, 0.3, 0.730, 0.175, 'CurricularPIN', width, height, (key) => handlePinInput(key, triggerRerender), renderKey)}
 
       {createTextElement("Game Editor", 0.43, 0.030, 0.025, width, height)}

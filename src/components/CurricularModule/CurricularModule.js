@@ -224,7 +224,7 @@ const CurricularModule = (props) => {
       {!showSettingsMenu && (
         <>
           <Background height={height * 1.1} width={width} />
-          <CurricularContentEditor height={height} width={width} conjectureCallback={conjectureCallback}/>
+          <CurricularContentEditor height={height} width={width} userName={userName} conjectureCallback={conjectureCallback}/>
 
           {/* Buttons */}
           <RectButton
