@@ -1073,38 +1073,26 @@ export const getFromDatabaseByGame = async (selectedGame, gameId, selectedStart,
   }
 };
 
-export const getFromDatabaseByGameCSV = async (selectedGame, selectedStart, selectedEnd ) => {
+export const getFromDatabaseByGameCSV = async (selectedGame, gameId, selectedStart, selectedEnd) => {
   try {
-    // Create reference to the realtime database
-    const eventdbRef = ref(db, `_GameData/${selectedGame}`);
-
-    // Query to find data
+    const eventdbRef = ref(db, `_GameData/${gameId}`);
     const eventq = query(eventdbRef, orderByKey(), startAt(selectedStart), endAt(selectedEnd));
-    // Execute the query
     const eventQuerySnapshot = await get(eventq);
 
     const formattedStart = selectedStart.replace(/[^a-zA-Z0-9]/g, '_');
     const formattedEnd = selectedEnd.replace(/[^a-zA-Z0-9]/g, '_');
     const formattedGame = selectedGame.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // Check if data in snapshot exists
     if (eventQuerySnapshot.exists()) {
       const eventData = eventQuerySnapshot.val();
-      //console.log('Data:', poseData);
       
-      // // Convert event log to JSON and download CSV
-      const eventjsonStr = JSON.stringify(eventData, null, 2);
-      const eventDownload = document.createElement('a');
-      eventDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(eventjsonStr));
-      eventDownload.setAttribute('download', `${formattedGame}_event_log_${formattedStart}_to_${formattedEnd}.json`);
-      document.body.appendChild(eventDownload);
-      eventDownload.click();
-      document.body.removeChild(eventDownload);
-
+      // Convert to JSON string and let convertJsonToCsv handle the download
+      const eventjsonStr = JSON.stringify(eventData);
       const result = await convertJsonToCsv(eventjsonStr, formattedGame, formattedStart, formattedEnd);
       
+      return result;
     } else {
-      return null; // This will happen if data not found
+      return null;
     }
   } catch (error) {
     throw error; 

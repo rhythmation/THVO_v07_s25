@@ -8,7 +8,7 @@ import InputBox from "../InputBox";
 import { Input } from 'postcss';
 import { useEffect, useRef, useState, } from 'react';
 import { getUserEmailFromDatabase,  } from "../../firebase/userDatabase"
-import { getFromDatabaseByGame, convertDateFormat, checkDateFormat, checkGameAuthorization, getAuthorizedGameList, findGameIdByName} from "../../firebase/database"
+import { getFromDatabaseByGame, convertDateFormat, checkDateFormat, checkGameAuthorization, getAuthorizedGameList, findGameIdByName, getFromDatabaseByGameCSV} from "../../firebase/database"
 import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 
