@@ -1024,11 +1024,11 @@ export const writeToDatabaseInsightEnd = async (gameId = undefined) => {
 };
 
 // Search functionality that downloads a set of child nodes from a game based on inputted dates
-export const getFromDatabaseByGame = async (selectedGame, selectedStart, selectedEnd ) => {
+export const getFromDatabaseByGame = async (selectedGame, gameId, selectedStart, selectedEnd ) => {
   try {
     // Create reference to the realtime database
-    const posedbRef = ref(db, `_PoseData/${selectedGame}`);
-    const eventdbRef = ref(db, `_GameData/${selectedGame}`);
+    const posedbRef = ref(db, `_PoseData/${gameId}`);
+    const eventdbRef = ref(db, `_GameData/${gameId}`);
 
     // Query to find data
     const poseq = query(posedbRef, orderByKey(), startAt(selectedStart), endAt(selectedEnd));
@@ -1304,5 +1304,31 @@ export const convertDateFormat = (dateStr) => {
     
     // Return the date string in the format 'yyyy-dd-mm'
     return `${year}-${month}-${day}`;
+};
+
+export const findGameIdByName = async (name) => {
+  try {
+    if (!name) return null;
+    
+    const gamesRef = ref(db, 'Game');
+    const gamesSnapshot = await get(gamesRef);
+    
+    if (!gamesSnapshot.exists()) return null;
+    
+    const games = gamesSnapshot.val();
+    
+    for (const gameKey in games) {
+      const game = games[gameKey];
+      if (game.CurricularName && game.CurricularName.includes(name)) {
+        // console.log('Game found:', game.CurricularName);
+        return game.UUID;
+      }
+    }
+  
+    return null;
+  } catch (error) {
+    console.error('Error finding gameId by name:', error);
+    return null;
+  }
 };
 
