@@ -62,8 +62,11 @@ export const currentConjecture = {
   // clear everything we cached during conjecture editing
   keysToPush.forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem('start.json');
-  localStorage.removeItem('intermediate.json')
-  localStorage.removeItem('end.json')
+  localStorage.removeItem('intermediate.json');
+  localStorage.removeItem('end.json');
+  localStorage.removeItem('Start Tolerance');
+  localStorage.removeItem('Intermediate Tolerance');
+  localStorage.removeItem('End Tolerance');
 };
 
 // fill in local storage using currentConjecture if an existing conjecture is selected

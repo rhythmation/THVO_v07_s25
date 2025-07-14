@@ -218,6 +218,9 @@ export const writeToDatabaseConjecture = async (existingUUID) => {
       set(ref(db, `${conjecturePath}/isFinal`), true),
       set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
       set(ref(db, `${conjecturePath}/Name`), dataToPush["Conjecture Name"]),
+      set(ref(db, `${conjecturePath}/Start Tolerance`), localStorage.getItem('Start Tolerance')),
+      set(ref(db, `${conjecturePath}/Intermediate Tolerance`), localStorage.getItem('Intermediate Tolerance')),
+      set(ref(db, `${conjecturePath}/End Tolerance`), localStorage.getItem('End Tolerance')),
     ];
 
     await Promise.all(promises);
