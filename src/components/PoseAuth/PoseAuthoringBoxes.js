@@ -174,11 +174,6 @@ export const StartBox = (props) => {
           anchor={0.5}
         />
         
-        {/* Draw green outline if box is selected */}
-        {props.boxState === "start" && (
-          <Graphics draw={drawBoxOutline} />
-        )}
-        
         {localStorage.getItem('start.json') !== null && (
           <Pose
             poseData={JSON.parse(localStorage.getItem('start.json'))}
@@ -356,10 +351,7 @@ export const IntermediateBox = (props) => {
             }
             anchor={0.5}
           />
-          {/* Draw green outline if box is EDIT is clicked */}
-          {props.boxState === "intermediate" && (
-          <Graphics draw={drawBoxOutline} />
-        )}
+
         {/* Pose is displayed if user captures intermidiate pose */}
         {localStorage.getItem('intermediate.json') !== null && (
           <Pose
@@ -535,10 +527,7 @@ export const EndBox = (props) => {
             }
             anchor={0.5}
           />
-          {/* Draw green outline if box is EDIT is clicked */}
-          {props.boxState === "end" && (
-          <Graphics draw={drawBoxOutline} />
-        )}
+
         {/* Pose is displayed if user captures end pose */}
         {localStorage.getItem('end.json') !== null && (
           <Pose
