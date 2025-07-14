@@ -198,8 +198,10 @@ export const writeToDatabaseConjecture = async (existingUUID) => {
     const concatenatedSearchWords = Object.values(searchWordsToPush).join(" ").toLowerCase();
     const wordsArray = concatenatedSearchWords.split(" ");
     const searchWordsToPushToDatabase = {};
+
     wordsArray.forEach(word => {
-      if (word) searchWordsToPushToDatabase[word] = word;
+      const cleanWord = word.replace(/[.#$/\[\]/]/g, '');
+      if (cleanWord) searchWordsToPushToDatabase[cleanWord] = cleanWord;
     });
 
     // Firebase path
@@ -215,12 +217,12 @@ export const writeToDatabaseConjecture = async (existingUUID) => {
       set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
       set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
       set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
-      set(ref(db, `${conjecturePath}/isFinal`), true),
       set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
       set(ref(db, `${conjecturePath}/Name`), dataToPush["Conjecture Name"]),
       set(ref(db, `${conjecturePath}/Start Tolerance`), localStorage.getItem('Start Tolerance')),
       set(ref(db, `${conjecturePath}/Intermediate Tolerance`), localStorage.getItem('Intermediate Tolerance')),
       set(ref(db, `${conjecturePath}/End Tolerance`), localStorage.getItem('End Tolerance')),
+      set(ref(db, `${conjecturePath}/isFinal`), true)
     ];
 
     await Promise.all(promises);
@@ -264,6 +266,23 @@ export const writeToDatabaseConjectureDraft = async (existingUUID) => {
       return false;
     }
 
+    // Prepare search words
+    const searchWordsToPush = {
+      "Author Name": dataToPush["Author Name"],
+      "Conjecture Description": dataToPush["Conjecture Description"],
+      "Conjecture Keywords": dataToPush["Conjecture Keywords"],
+      "Conjecture Name": dataToPush["Conjecture Name"]
+    };
+
+    const concatenatedSearchWords = Object.values(searchWordsToPush).join(" ").toLowerCase();
+    const wordsArray = concatenatedSearchWords.split(" ");
+    const searchWordsToPushToDatabase = {};
+
+    wordsArray.forEach(word => {
+      const cleanWord = word.replace(/[.#$/\[\]/]/g, '');
+      if (cleanWord) searchWordsToPushToDatabase[cleanWord] = cleanWord;
+    });
+
     // Create pose data
     const startJson = localStorage.getItem('start.json');
     const intermediateJson = localStorage.getItem('intermediate.json');
@@ -282,8 +301,12 @@ export const writeToDatabaseConjectureDraft = async (existingUUID) => {
       set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
       set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
       set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
+      set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
       set(ref(db, `${conjecturePath}/UUID`), conjectureID),
-      set(ref(db, `${conjecturePath}/isFinal`), false),
+      set(ref(db, `${conjecturePath}/Start Tolerance`), localStorage.getItem('Start Tolerance')),
+      set(ref(db, `${conjecturePath}/Intermediate Tolerance`), localStorage.getItem('Intermediate Tolerance')),
+      set(ref(db, `${conjecturePath}/End Tolerance`), localStorage.getItem('End Tolerance')),
+      set(ref(db, `${conjecturePath}/isFinal`), false)
     ];
 
     await Promise.all(promises);

@@ -8,7 +8,8 @@ import { promiseChecker, writeToDatabase } from "../../firebase/database.js";
 
 const ConjecturePoseContainer = (props) => {
     const {
-        poses, 
+        poses,
+        tolerances, 
         needBack,
         height,
         width,
@@ -82,6 +83,7 @@ const ConjecturePoseContainer = (props) => {
         <Graphics draw={drawModalBackground} />
         <ConjecturePoseMatch
             poses={poses}
+            tolerances={tolerances}
             height={height}
             width={width}
             columnDimensions={columnDimensions}

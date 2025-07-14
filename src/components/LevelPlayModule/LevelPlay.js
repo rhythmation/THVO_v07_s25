@@ -45,6 +45,7 @@ export default function LevelPlay(props) {
   }, [currentConjectureIdx, send]);
   const [conjectureData, setConjectureData] = useState(null);
   const [poses, setPoses] = useState([]);
+  const [tolerances, setTolerances] = useState([]);
   const [expText, setExpText] = useState('');
   const tweenDuration = 2000;
   const tweenLoopCount = 2;
@@ -54,12 +55,21 @@ export default function LevelPlay(props) {
     getConjectureDataByUUID(UUID)
       .then((d) => {
         setConjectureData(d);
+
         const { ['Start Pose']: s, ['Intermediate Pose']: i, ['End Pose']: e } = d[UUID];
+
         setPoses([
           JSON.parse(s.poseData),
           JSON.parse(i.poseData),
           JSON.parse(e.poseData),
         ]);
+
+        const tolArray = [s, i, e].map((pose) =>
+          typeof pose.tolerance === 'string' || typeof pose.tolerance === 'number'
+            ? parseFloat(pose.tolerance)
+            : null
+        );
+        setTolerances(tolArray);
       })
       .catch(console.error);
   }, [UUID]);
@@ -164,6 +174,7 @@ export default function LevelPlay(props) {
           mainCallback={backCallback}
           UUID={UUID}
           poses={poses}
+          tolerances={tolerances}
           onCompleteCallback={() => send('NEXT')}
           gameID={gameID}
         />

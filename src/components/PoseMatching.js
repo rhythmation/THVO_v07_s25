@@ -14,7 +14,7 @@ import { uniqueId } from "xstate/lib/utils.js";
 let poseNumber = 1;
 
 const PoseMatching = (props) => {
-  const { posesToMatch, columnDimensions, onComplete, UUID, gameID } = props;
+  const { posesToMatch, tolerances, columnDimensions, onComplete, UUID, gameID } = props;
   
   const poseNumberStr = "Pose";
   const context = posesToMatch.map((x) => {    
@@ -119,8 +119,9 @@ const PoseMatching = (props) => {
     if (!firstPose) {
       let similarityThreshold = 45;
       // if there is a tolerance for the pose, use that as the threshold
-      if (currentPose.tolerance != null && !isNaN(currentPose.tolerance)) {
-        similarityThreshold = currentPose.tolerance;
+      if (!isNaN(tolerances[poseNumber - 1])) {
+        similarityThreshold = tolerances[poseNumber - 1];
+        console.log("PoseMatching found tolerance from array and it is: ", similarityThreshold);
       }
       const similarityScore = poseSimilarity.reduce(
         (previousValue, currentValue) => {
