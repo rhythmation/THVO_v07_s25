@@ -110,11 +110,26 @@ function setLocalStorage(){
     }
   });
 
-  // 3. Remember UUID (needed when the user hits SAVE/PUBLISH)
+  // 3. Tolerance
+  const toleranceKeys = [
+    ['Start Pose',        'Start Tolerance'],
+    ['Intermediate Pose', 'Intermediate Tolerance'],
+    ['End Pose',          'End Tolerance'],
+  ];
+  toleranceKeys.forEach(([dbKey, lsKey]) => {
+    const tol = conj[dbKey]?.tolerance;
+    if (tol !== undefined && tol !== null && tol !== '') {
+      localStorage.setItem(lsKey, tol);
+    } else {
+      localStorage.removeItem(lsKey);
+    }
+  });
+
+  // 4. Remember UUID (needed when the user hits SAVE/PUBLISH)
   currentConjecture.CurrentUUID = conj.UUID ?? null;
   currentConjecture.CurrentConjecture = null;   // avoid re-entrancy
 
-  // 4. Default correct answer
+  // 5. Default correct answer
   if (!localStorage.getItem('Correct Answer')) localStorage.setItem('Correct Answer', 'A');
  }
 
