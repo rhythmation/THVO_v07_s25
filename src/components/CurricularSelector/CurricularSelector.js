@@ -94,7 +94,7 @@ const CurricularSelectModule = (props) => {
 
   //use to get a fixed number of conjectures per page and to navigate between the pages
   const curricularPerPage = 7;
-  const totalPages = Math.ceil(curricularList.length / curricularPerPage);
+  const totalPages = Math.ceil((curricularList?.length || 0) / curricularPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -119,7 +119,7 @@ const CurricularSelectModule = (props) => {
 
   // use to determine the subset of games to display based on the current page
   const startIndex = currentPage * curricularPerPage;
-  const currentCurriculars = curricularList.slice(startIndex, startIndex + curricularPerPage);
+  const currentCurriculars = (curricularList || []).slice(startIndex, startIndex + curricularPerPage);
 
   // draw the buttons that show the author name, name of game, and keywords, and the add conjecture button
   const drawCurricularList = (xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth, totalHeight) => {

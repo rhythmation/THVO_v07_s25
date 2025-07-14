@@ -77,7 +77,7 @@ const ConjectureSelectModule = (props) => {
 
   //use to get a fixed number of conjectures per page and to navigate between the pages
   const conjecturesPerPage = 7;
-  const totalPages = Math.ceil(conjectureList.length / conjecturesPerPage);
+  const totalPages = Math.ceil((conjectureList?.length || 0) / conjecturesPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -116,7 +116,7 @@ const ConjectureSelectModule = (props) => {
 
   // use to determine the subset of conjectures to display based on the current page
   const startIndex = currentPage * conjecturesPerPage;
-  const currentConjectures = conjectureList.slice(startIndex, startIndex + conjecturesPerPage);
+  const currentConjectures = (conjectureList || []).slice(startIndex, startIndex + conjecturesPerPage);
 
   // draw the buttons that show the author name, name of conjecture, and keywords, and the add conjecture button
   const drawConjectureList = (xMultiplier, yMultiplier, fontSizeMultiplier, totalWidth, totalHeight) => {
