@@ -255,10 +255,30 @@ const Chapter = (props) => {
           console.log('Filtered intros:', intros);
           console.log('Filtered outros:', outros);
           
-          const scene = [];
+          let scene = [];
+
           if (script[currentChapterName] && script[currentChapterName].scene) {
-            scene.push(...script[currentChapterName].scene);
+            scene = [...script[currentChapterName].scene];
+          } else {
+            console.warn(`No scene found for chapter ${currentChapterName}, using default scene.`);
+            scene = [
+              {
+                id: "equilateralTriangle",
+                distance: "foreground",
+                placement: "left",
+                mood: "neutral",
+                color: "blue",
+              },
+              {
+                id: "rectangle",
+                distance: "midground",
+                placement: "right",
+                mood: "happy",
+                color: "green",
+              },
+            ];
           }
+
 
           console.log('=== UPDATING STATE ===');
           console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
