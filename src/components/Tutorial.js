@@ -169,6 +169,7 @@ const Tutorial = (props) => {
             poseData={props.poseData}
             rowDimensions={props.rowDimensions}
             callback={() => send("NEXT")}
+            colAttr={playerColumn}       
           />
         )}
       </ErrorBoundary>

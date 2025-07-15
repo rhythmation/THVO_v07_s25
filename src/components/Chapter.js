@@ -401,9 +401,10 @@ const Chapter = (props) => {
         <Pose poseData={poseData} colAttr={columnDimensions(3)} />
       )}
       {cursorMode && (
-        <CursorMode 
-          rowDimensions={rowDimensions} 
-          poseData={poseData} 
+        <CursorMode
+          poseData={poseData}
+          colAttr={columnDimensions(3)}  // ← NEW
+          rowDimensions={rowDimensions}
           callback={handleAdvance}
         />
       )}
