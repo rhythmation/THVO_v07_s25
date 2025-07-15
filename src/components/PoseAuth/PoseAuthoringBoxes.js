@@ -184,6 +184,7 @@ export const StartBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
         )}
         
@@ -252,6 +253,7 @@ export const StartBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
         )}
         
@@ -363,6 +365,7 @@ export const IntermediateBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
           )}
         {/* Display tolerance when entered */}
@@ -428,6 +431,7 @@ export const IntermediateBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
           )}
         {/* Display tolerance when entered */}
@@ -539,6 +543,7 @@ export const EndBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
           )}
         {/* Display tolerance when entered */}
@@ -604,6 +609,7 @@ export const EndBox = (props) => {
               height: rectangleWidth * 0.47,
             }}
             similarityScores={props.similarityScores}
+            skipArmWidthCalculation={true}
           />
           )}
         {/* Display tolerance when entered */}

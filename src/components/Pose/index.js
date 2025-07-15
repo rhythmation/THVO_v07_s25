@@ -428,7 +428,9 @@ const Pose = forwardRef((props, ref) => {
         drawFace(props.poseData, g, width, height, similarityScores);
       }
       if (props.poseData.poseLandmarks) {
-        setArmWidth(calculateArmWidth(props.poseData, width, height));
+        if (!props.skipArmWidthCalculation) {
+          setArmWidth(calculateArmWidth(props.poseData, width, height));
+        }
         // NOTE: Order of drawing body section matters, do not reorder
         drawTorso(props.poseData, g, width, height, similarityScores);
         drawAbdomen(props.poseData, g, width, height);
