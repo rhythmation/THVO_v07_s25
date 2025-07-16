@@ -660,7 +660,7 @@ export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
     set(ref(db, `Game/${gameId}/Dialogues`), dialogues),
     set(ref(db, `Game/${gameId}/LastSaved`), timestamp),
     set(ref(db, `Game/${gameId}/UUID`), gameId),
-    set(ref(db, `Game/${gameId}/isFinal`), false),
+    //set(ref(db, `Game/${gameId}/isFinal`), false),   DONT MODIFY THE ORIGINAL VALUE
     // Optional: auto-set author again for traceability
     set(ref(db, `Game/${gameId}/AuthorID`), userId),
     set(ref(db, `Game/${gameId}/Author`), userName),
