@@ -6,7 +6,7 @@ import RectButton from "../RectButton";
 // Import necessary Firebase functions
 import { getDatabase, ref, get, update } from "firebase/database";
 import { getAuth } from "firebase/auth"; // Import getAuth
-import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase } from "../../firebase/database"; // Import loadGameDialoguesFromFirebase
+import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase, handleSave } from "../../firebase/database";
 import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
 import Settings from '../Settings';
@@ -102,88 +102,6 @@ const CurricularModule = (props) => {
   const enhancedMainCallback = () => {
     resetCurricularValues();
     mainCallback();
-  };
-
-  /**
-   * @function handleSave
-   * @description Saves the current game as a draft or publishes it.
-   * It performs a check to ensure the game name is unique before saving.
-   * @param {boolean} isFinal - True to publish, false to save as a draft.
-   */
-  const handleSave = async (isFinal) => {
-    const db = getDatabase();
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      alert("You must be logged in to save a game.");
-      return;
-    }
-
-    const gameName = localStorage.getItem('CurricularName');
-    const currentUUID = Curriculum.getCurrentUUID() || uuidv4();
-
-    if (!gameName || gameName.trim() === "") {
-      alert("Please enter a game name before saving.");
-      return;
-    }
-
-    const gameNameKey = gameName.trim();
-
-    // --- START: UNIQUE NAME VALIDATION ---
-    const gameNamesRef = ref(db, `gameNames/${gameNameKey}`);
-    const snapshot = await get(gameNamesRef);
-
-    if (snapshot.exists() && snapshot.val() !== currentUUID) {
-      alert("This game name is already taken. Please choose a different name.");
-      return;
-    }
-    // --- END: UNIQUE NAME VALIDATION ---
-
-    // Proceed with saving the game
-    try {
-      // --- START: GATHER ALL DATA ---
-      const conjectureUUIDs = Curriculum.getCurrentConjectures().map(c => c.UUID);
-      const existingDialogues = await loadGameDialoguesFromFirebase(currentUUID) || [];
-      const userId = user.uid;
-      const userName = user.email.split('@')[0];
-      
-      const gameData = {
-        CurricularName: gameName,
-        CurricularAuthor: localStorage.getItem('CurricularAuthor') || "Unknown",
-        CurricularKeywords: localStorage.getItem('CurricularKeywords') || "",
-        CurricularPIN: localStorage.getItem('CurricularPIN') || "",
-        ConjectureUUIDs: conjectureUUIDs,
-        isFinal: isFinal,
-        UUID: currentUUID,
-        Time: new Date().toISOString(),
-        Author: userName,
-        AuthorID: userId,
-        Dialogues: existingDialogues
-      };
-      // --- END: GATHER ALL DATA ---
-
-      // Use a multi-path update to save the game and the name index atomically
-      const updates = {};
-      updates[`/Game/${currentUUID}`] = gameData;
-      updates[`/gameNames/${gameNameKey}`] = currentUUID;
-
-      await update(ref(db), updates);
-
-      alert(`Game ${isFinal ? "published" : "saved as draft"} successfully!`);
-
-      // Keep the UUID in case the user wants to continue editing
-      Curriculum.setCurrentUUID(currentUUID);
-
-      if (isFinal) {
-        // Optionally, navigate away or clear fields after publishing
-        mainCallback();
-      }
-
-    } catch (error) {
-      console.error("Error saving game:", error);
-      alert("An error occurred while saving the game. Please see the console for details.");
-    }
   };
 
   const deleteCurrentCurricular = async (currentUUID) => {
@@ -315,7 +233,12 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"SAVE DRAFT"}
             fontWeight={800}
-            callback={() => handleSave(false)} // Use new save function
+            callback={async () => {
+              const success = await handleSave(false);
+              if (success) {
+                mainCallback();
+              }
+            }}
           />
           <RectButton
             height={height * 0.13}
@@ -327,7 +250,12 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"PUBLISH"}
             fontWeight={800}
-            callback={() => handleSave(true)} // Use new save function
+            callback={async () => {
+              const success = await handleSave(true);
+              if (success) {
+                mainCallback();
+              }
+            }}
           />
           <RectButton
             height={height * 0.13}

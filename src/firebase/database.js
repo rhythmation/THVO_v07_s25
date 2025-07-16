@@ -1,5 +1,5 @@
 // Firebase Init
-import { ref, push, getDatabase, set, query, equalTo, get, orderByChild, orderByKey, onValue, child, startAt, endAt, remove } from "firebase/database";
+import { ref, push, getDatabase, set, query, equalTo, get, orderByChild, orderByKey, onValue, child, startAt, endAt, remove, update } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 import { Curriculum } from "../components/CurricularModule/CurricularModule";
@@ -488,6 +488,99 @@ const countRejectedPromises = async (promises) => {
   return rejectedCount;
 };
 
+  /**
+   * @function handleSave
+   * @description Saves the current game as a draft or publishes it.
+   * It performs a check to ensure the game name is unique before saving.
+   * @param {boolean} isFinal - True to publish, false to save as a draft.
+   */
+  export const handleSave = async (isFinal) => {
+    const db = getDatabase();
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      alert("You must be logged in to save a game.");
+      return false;
+    }
+
+    const gameName = localStorage.getItem('CurricularName');
+    const currentUUID = Curriculum.getCurrentUUID() || uuidv4();
+
+    if (!gameName || gameName.trim() === "") {
+      alert("Please enter a game name before saving.");
+      return false;
+    }
+
+    const gameNameKey = gameName.trim();
+
+    // --- START: UNIQUE NAME VALIDATION ---
+    const gameNamesRef = ref(db, `gameNames/${gameNameKey}`);
+    const snapshot = await get(gameNamesRef);
+
+    if (snapshot.exists() && snapshot.val() !== currentUUID) {
+      alert("This game name is already taken. Please choose a different name.");
+      return false;
+    }
+    // --- END: UNIQUE NAME VALIDATION ---
+
+    // --- START: VALIDATION FOR PUBLISHING ---
+    if (isFinal) {
+      const missingFields = curricularTextBoxes.filter((key) => {
+        const val = localStorage.getItem(key);
+        return val == null || val.trim() === "";
+      });
+
+      if (missingFields.length > 0) {
+        alert("One or more text fields are empty. Please fill out all required fields before publishing.");
+        return false;
+      }
+
+      const conjectures = Curriculum.getCurrentConjectures();
+      if (!conjectures || conjectures.length === 0) {
+        alert("Please add at least one level (conjecture) to your game before publishing.");
+        return false;
+      }
+    }
+    // --- END: VALIDATION FOR PUBLISHING ---
+
+    // Proceed with saving the game
+    try {
+      const conjectureUUIDs = Curriculum.getCurrentConjectures().map(c => c.UUID);
+      const existingDialogues = await loadGameDialoguesFromFirebase(currentUUID) || [];
+      const userId = user.uid;
+      const userName = user.email.split('@')[0];
+
+      const gameData = {
+        CurricularName: gameName,
+        CurricularAuthor: localStorage.getItem('CurricularAuthor') || "Unknown",
+        CurricularKeywords: localStorage.getItem('CurricularKeywords') || "",
+        CurricularPIN: localStorage.getItem('CurricularPIN') || "",
+        ConjectureUUIDs: conjectureUUIDs,
+        isFinal: isFinal,
+        UUID: currentUUID,
+        Time: new Date().toISOString(),
+        Author: userName,
+        AuthorID: userId,
+        Dialogues: existingDialogues
+      };
+
+      const updates = {};
+      updates[`/Game/${currentUUID}`] = gameData;
+      updates[`/gameNames/${gameNameKey}`] = currentUUID;
+
+      await update(ref(db), updates);
+
+      alert(`Game ${isFinal ? "published" : "saved as draft"} successfully!`);
+      Curriculum.setCurrentUUID(currentUUID);
+      return true;
+
+    } catch (error) {
+      console.error("Error saving game:", error);
+      alert("An error occurred while saving the game. Please see the console for details.");
+      return false;
+    }
+};
 
 // save a draft of a collection of conjectures to be published later
 export const writeToDatabaseCurricularDraft = async (UUID) => {
