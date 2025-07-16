@@ -149,10 +149,7 @@ const parallelogramPath = new URL(
   "../assets/animations/area_parallelogram_trimmed.webm",
   import.meta.url
 );
-const angleAngleAnglePath = new URL(
-  "../assets/animations/angle_angle_angle_trimmed.webm",
-  import.meta.url
-);
+
 const areaDoubledPath = new URL(
   "../assets/animations/area_doubled_trimmed_2.webm",
   import.meta.url
