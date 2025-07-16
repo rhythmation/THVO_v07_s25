@@ -19,6 +19,14 @@ const PlayGame = (props) => {
 
   const uuidsList = Curriculum.getCurrentConjectures();
 
+  // Edge case handler: if no levels, redirect back
+  useEffect(() => {
+    if (uuidsList.length === 0) {
+      alert("This Game contains no levels that can be played!");
+      backCallback?.();
+    }
+  }, [uuidsList, backCallback]);
+
   const [state, send] = useMachine(() => PlayGameMachine(uuidsList));
   const uuidIDX = state.context.uuidIndex;
 
