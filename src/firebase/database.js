@@ -667,7 +667,6 @@ export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
   ];
 
   await Promise.all(promises);
-  alert("Narrative draft saved.");
 };
 
 

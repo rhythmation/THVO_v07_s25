@@ -280,7 +280,10 @@ const StoryEditorModule = (props) => {
     try {
       // Save dialogues in their current order
       await saveNarrativeDraftToFirebase(gameId, dialogues);
-      alert("Dialogues saved to the game node!");
+      alert("Dialogues saved for this game!");
+      if (typeof curricularCallback === 'function') {
+        curricularCallback();
+      }
     } catch (error) {
       console.error("Error saving dialogues:", error);
       alert("Failed to save dialogues.");
