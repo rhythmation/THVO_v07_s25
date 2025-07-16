@@ -118,11 +118,17 @@ const PoseMatching = (props) => {
   useEffect(() => {
     if (!firstPose) {
       let similarityThreshold = 45;
+
       // if there is a tolerance for the pose, use that as the threshold
-      if (!isNaN(tolerances[poseNumber - 1])) {
+      if (
+        Array.isArray(tolerances) &&
+        tolerances.length >= poseNumber &&
+        !isNaN(tolerances[poseNumber - 1])
+      ) {
         similarityThreshold = tolerances[poseNumber - 1];
         console.log("PoseMatching found tolerance from array and it is: ", similarityThreshold);
       }
+
       const similarityScore = poseSimilarity.reduce(
         (previousValue, currentValue) => {
           // all segments need to be over the threshold -- will only return true if
@@ -133,6 +139,7 @@ const PoseMatching = (props) => {
         },
         true
       );
+      
       if (similarityScore) {
         // write the match to the database
         writeToDatabasePoseMatch(poseNumberStr + " " + poseNumber, gameID);

@@ -66,7 +66,7 @@ export default function LevelPlay(props) {
 
         const tolArray = [s, i, e].map((pose) =>
           typeof pose.tolerance === 'string' || typeof pose.tolerance === 'number'
-            ? parseFloat(pose.tolerance)
+            ? parseInt(pose.tolerance)
             : null
         );
         setTolerances(tolArray);
