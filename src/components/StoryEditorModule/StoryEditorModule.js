@@ -4,7 +4,6 @@ import Background from "../Background";
 import { blue, white, red, green, indigo, hotPink, purple,} from "../../utils/colors";
 import Button from "../Button"
 import RectButton from "../RectButton";
-import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID } from "../../firebase/database";
 import { useMachine } from "@xstate/react";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
 import { StoryEditorContentEditor } from "./StoryEditorModuleBoxes";
@@ -304,26 +303,6 @@ const StoryEditorModule = (props) => {
   const enhancedMainCallback = () => {
     resetCurricularValues(); // Reset values before going back
     mainCallback(); //use the callbackfunction
-  };
-
-  // Publish function that includes reset
-  async function publishAndReset(currentUUID)  {
-    let promise = await writeToDatabaseCurricular(currentUUID);
-    if (promise != undefined) { // promise is undefined if the game cannot be published
-      // Don't reset values when publishing - this keeps dialogues accessible
-      alert("Game published successfully! Your dialogues are preserved.");
-      
-      // Optional: If you want to clear some data but KEEP the game UUID:
-      localStorage.removeItem('CurricularName');
-      localStorage.removeItem('CurricularAuthor');
-      localStorage.removeItem('CurricularKeywords');
-      localStorage.removeItem('CurricularPIN');
-      
-      // IMPORTANT: Do NOT clear the curriculum or reset the UUID
-      // This keeps the connection to your dialogues intact
-      // Curriculum.clearCurriculum(); - REMOVE THIS
-      // Curriculum.CurrentConjectures = []; - REMOVE THIS
-    }
   };
 
   if (loading) {
