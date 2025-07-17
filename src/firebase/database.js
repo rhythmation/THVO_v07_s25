@@ -492,9 +492,13 @@ const countRejectedPromises = async (promises) => {
    * @function handleSave
    * @description Saves the current game as a draft or publishes it.
    * It performs a check to ensure the game name is unique before saving.
+   * @param {string|null} UUID - The unique identifier for the game. If null, a new UUID will be generated.
    * @param {boolean} isFinal - True to publish, false to save as a draft.
+   * @returns {Promise<boolean>} - Returns true if the save was successful, false otherwise.
+   * Files using this function: CurricularModule.js
+   * TODO: Add a last edited by field
    */
-  export const handleSave = async (isFinal) => {
+  export const saveGame = async (UUID = null, isFinal = false) => {
     const db = getDatabase();
     const auth = getAuth();
     const user = auth.currentUser;
@@ -505,7 +509,7 @@ const countRejectedPromises = async (promises) => {
     }
 
     const gameName = localStorage.getItem('CurricularName');
-    const currentUUID = Curriculum.getCurrentUUID() || uuidv4();
+    const currentUUID = UUID || uuidv4();
 
     if (!gameName || gameName.trim() === "") {
       alert("Please enter a game name before saving.");

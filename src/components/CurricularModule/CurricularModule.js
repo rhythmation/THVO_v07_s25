@@ -6,7 +6,7 @@ import RectButton from "../RectButton";
 // Import necessary Firebase functions
 import { getDatabase, ref, get, update } from "firebase/database";
 import { getAuth } from "firebase/auth"; // Import getAuth
-import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase, handleSave } from "../../firebase/database";
+import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase, saveGame } from "../../firebase/database";
 import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
 import Settings from '../Settings';
@@ -234,7 +234,7 @@ const CurricularModule = (props) => {
             text={"SAVE DRAFT"}
             fontWeight={800}
             callback={async () => {
-              const success = await handleSave(false);
+              const success = await saveGame(Curriculum.getCurrentUUID(), false);
               if (success) {
                 mainCallback();
               }
@@ -251,7 +251,7 @@ const CurricularModule = (props) => {
             text={"PUBLISH"}
             fontWeight={800}
             callback={async () => {
-              const success = await handleSave(true);
+              const success = await saveGame(Curriculum.getCurrentUUID(), true);
               if (success) {
                 mainCallback();
               }
