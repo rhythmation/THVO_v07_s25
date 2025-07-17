@@ -127,7 +127,12 @@ export default function LevelPlay(props) {
 
   return (
     <>
-      <VideoRecorder phase={state.value} curricularID={UUID} gameID={gameID} />
+      {/* NOTE: TO OPTIMIZE DATABASE STORAGE AND NOT INCUR ADDITIONAL COSTS, 
+          VIDEO RECORDING IS ONLY RETAINED FOR THE STATES MENTIONED BELOW.
+          SIMPLY ADD THE STATE NAME TO ENABLE RECORDING FOR THAT PHASE */}
+      {(['poseMatching', 'intuition', 'insight'].includes(state.value)) && (
+        <VideoRecorder phase={state.value} curricularID={UUID} gameID={gameID} />
+      )}
 
       {/* Intro dialogue */}
       {state.value === 'introDialogue' &&
