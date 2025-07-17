@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useMachine, useSelector, assign } from "@xstate/react";
 import chapterMachine from "../machines/chapterMachine.js";
 import { Sprite } from "@inlet/react-pixi";
-import Experiment from "./Experiment.js";  //make sure to pass gameID prop to Experiment
 import script from "../scripts/chapters.toml";
 import { Curriculum } from "./CurricularModule/CurricularModule";
 import { loadGameDialoguesFromFirebase } from "../firebase/database.js";
