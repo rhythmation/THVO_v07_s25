@@ -62,27 +62,41 @@ export default function CursorMode({ callback, rowDimensions, colAttr, poseData 
     });
   }, [state.context.placementCounter, rowDims]);
 
-  // track only right index-tip
+const toScreen = (lm, col) => ({
+  x: col.x + lm.x * col.width,
+  y: col.y + lm.y * col.height,
+});
+
+
   useEffect(() => {
-    const lm = poseData?.leftHandLandmarks?.[INDEX_TIP];
-    if (!lm || !curRef.current) return;
+  // Mediapipe is mirrored: swap the two here so your physical right is chosen first
+  const realRight = poseData?.leftHandLandmarks?.[INDEX_TIP];
+  const realLeft  = poseData?.rightHandLandmarks?.[INDEX_TIP];
 
-    const { x, y } = {
-      x: colAttr.x + lm.x * colAttr.width,
-      y: colAttr.y + lm.y * colAttr.height,
-    };
+  if (realRight) {
+    // your actual right hand
+    const { x, y } = toScreen(realRight, colAttr);
     setCursorPos({ x, y });
+  } else if (realLeft) {
+    // fallback to the other hand
+    const { x, y } = toScreen(realLeft, colAttr);
+    setCursorPos({ x, y });
+  } else {
+    // neither hand visible → hide cursor
+    setCursorPos({ x: -100, y: -100 });
+    return;
+  }
 
-    // hit test
-    if (
-      hitAreasIntersect(
-        new Rectangle(x, y, 76, 76),
-        nextRef.current.hitArea
-      )
-    ) {
-      send("TRIGGER");
-    }
-  }, [poseData, colAttr, send]);
+  if (
+    hitAreasIntersect(
+      new Rectangle(cursorPos.x, cursorPos.y, 76, 76),
+      nextRef.current.hitArea
+    )
+  ) {
+    send("TRIGGER");
+  }
+}, [poseData, colAttr, send]);
+
 
   return (
     <Container>
