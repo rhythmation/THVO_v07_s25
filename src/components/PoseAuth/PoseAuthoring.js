@@ -6,7 +6,7 @@ import { black, green, blue, white, pink, orange } from "../../utils/colors";
 import RectButton from "../RectButton";
 import { useMachine } from "@xstate/react";
 import { PoseAuthMachine } from "../../machines/poseauthMachine";
-import { capturePose, saveConjecture, resetConjecture } from "./ButtonFunctions";
+import { capturePose, resetConjecture } from "./ButtonFunctions";
 import { calculateFaceDepth } from "../Pose/landmark_utilities";
 import { Text, Graphics } from '@inlet/react-pixi';
 import usePoseData from "../utilities/PoseData";
@@ -140,14 +140,15 @@ const handleReset = () => {
       setTimeout(() => setBoxVisible(false), 3000);
     }
 
-    // Function that handles saving poses when 'Save Draft' button is clicked
+    // Function that handles saving poses when 'Save' button is clicked
+    // Since capturePose already sets the local storage, 
+    // we just need to navigate away and the actual pose save would be handled by the save draft of level editor
     const handleSave = () => {
       if (localStorage.length === 0) {
         console.log("Local Storage is empty. Nothing to save.");
         conjectureCallback();
         return;
       }
-      saveConjecture();
       conjectureCallback();
     };
 
@@ -342,25 +343,25 @@ const handleReset = () => {
         />
         {/* Cancel Button build */}
         <RectButton
-  height={height * 0.12}
-  width={width * 0.20}
-  x={width * 0.66}
-  y={height * 0.83}
-  color={white}
-  fontSize={width * 0.021}
-  fontColor={blue}
-  text={"Cancel"}
-  fontWeight={800}
-  callback={() => {
-    const confirmLeave = window.confirm(
-      "You didn't save the poses. Are you sure you want to leave?"
-    );
-    if (confirmLeave) {
-      restoreOriginalPoses();   // put old poses back
-      conjectureCallback();     // return to Level Editor
-    }
-  }}
-/>
+          height={height * 0.12}
+          width={width * 0.20}
+          x={width * 0.66}
+          y={height * 0.83}
+          color={white}
+          fontSize={width * 0.021}
+          fontColor={blue}
+          text={"Cancel"}
+          fontWeight={800}
+          callback={() => {
+            const confirmLeave = window.confirm(
+              "You didn't save the poses. Are you sure you want to leave?"
+            );
+            if (confirmLeave) {
+              restoreOriginalPoses();   // put old poses back
+              conjectureCallback();     // return to Level Editor
+            }
+          }}
+        />
         {/* Reset Button build */}
         <RectButton
           height={height * 0.12}
