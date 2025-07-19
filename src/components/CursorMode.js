@@ -4,6 +4,9 @@ import { Container, Sprite } from "@inlet/react-pixi";
 import { useState, useEffect, useRef } from "react";
 import CursorMachine from "../machines/cursorMachine";
 import { useMachine, useSelector } from "@xstate/react";
+import cursorIcon from "../assets/cursor.png";
+import nextBtn from "../assets/next_button.png";
+import nextBtnHover from "../assets/next_button_hover.png";
 
 const hitAreasIntersect = (cursorArea, buttonArea) => {
   const s = 0.7;
@@ -14,6 +17,7 @@ const hitAreasIntersect = (cursorArea, buttonArea) => {
     cursorArea.y + cursorArea.height > buttonArea.y
   );
 };
+
 const nextButtonY = (count) => {
   const [min, max] = [0.595, 0.85];
   return count
@@ -34,74 +38,56 @@ export default function CursorMode({ callback, rowDimensions, colAttr, poseData 
   });
   const hovering = useSelector(service, selectHover);
 
-  // full-screen dims for the button
-  const [rowDims] = useState(rowDimensions(2));
-  const [cursorImg] = useState(new URL("../assets/cursor.png", import.meta.url));
-  const [btnImg, setBtnImg] = useState(new URL("../assets/next_button.png", import.meta.url));
+  const rowDims = rowDimensions(2);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [btnPos, setBtnPos] = useState({
     x: window.innerWidth - 3 * rowDims.margin,
     y: window.innerHeight * nextButtonY(state.context.placementCounter),
   });
 
-  // swap texture on hover
-  useEffect(() => {
-    setBtnImg(
-      new URL(
-        hovering ? "../assets/next_button_hover.png" : "../assets/next_button.png",
-        import.meta.url
-      )
-    );
-  }, [hovering]);
+  const btnImg = hovering ? nextBtnHover : nextBtn;
 
-  // move button whenever counter changes
   useEffect(() => {
     setBtnPos({
       x: window.innerWidth - 3 * rowDims.margin,
       y: window.innerHeight * nextButtonY(state.context.placementCounter),
     });
-  }, [state.context.placementCounter, rowDims]);
+  }, [state.context.placementCounter, rowDims.margin]);
 
-const toScreen = (lm, col) => ({
-  x: col.x + lm.x * col.width,
-  y: col.y + lm.y * col.height,
-});
-
+  const toScreen = (lm, col) => ({
+    x: col.x + lm.x * col.width,
+    y: col.y + lm.y * col.height,
+  });
 
   useEffect(() => {
-  // Mediapipe is mirrored: swap the two here so your physical right is chosen first
-  const realRight = poseData?.leftHandLandmarks?.[INDEX_TIP];
-  const realLeft  = poseData?.rightHandLandmarks?.[INDEX_TIP];
+    const realRight = poseData?.leftHandLandmarks?.[INDEX_TIP];
+    const realLeft = poseData?.rightHandLandmarks?.[INDEX_TIP];
 
-  if (realRight) {
-    // your actual right hand
-    const { x, y } = toScreen(realRight, colAttr);
-    setCursorPos({ x, y });
-  } else if (realLeft) {
-    // fallback to the other hand
-    const { x, y } = toScreen(realLeft, colAttr);
-    setCursorPos({ x, y });
-  } else {
-    // neither hand visible → hide cursor
-    setCursorPos({ x: -100, y: -100 });
-    return;
-  }
+    let newPos;
+    if (realRight) {
+      newPos = toScreen(realRight, colAttr);
+    } else if (realLeft) {
+      newPos = toScreen(realLeft, colAttr);
+    } else {
+      newPos = { x: -100, y: -100 };
+    }
 
-  if (
-    hitAreasIntersect(
-      new Rectangle(cursorPos.x, cursorPos.y, 76, 76),
-      nextRef.current.hitArea
-    )
-  ) {
-    send("TRIGGER");
-  }
-}, [poseData, colAttr, send]);
+    setCursorPos(newPos);
 
+    if (
+      hitAreasIntersect(
+        new Rectangle(newPos.x, newPos.y, 76, 76),
+        nextRef.current?.hitArea
+      )
+    ) {
+      send("TRIGGER");
+    }
+  }, [poseData, colAttr, send]);
 
   return (
     <Container>
       <Sprite
-        image={btnImg.href}
+        image={btnImg}
         x={btnPos.x}
         y={btnPos.y}
         interactive
@@ -110,7 +96,7 @@ const toScreen = (lm, col) => ({
         hitArea={new Rectangle(btnPos.x, btnPos.y, 76, 76)}
       />
       <Sprite
-        image={cursorImg.href}
+        image={cursorIcon}
         x={cursorPos.x}
         y={cursorPos.y}
         interactive
