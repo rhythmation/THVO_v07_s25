@@ -91,13 +91,13 @@ const ExperimentalTask = (props) => {
       <Graphics draw={drawModalBackground} />
       <Text
         text={prompt}
-        y={columnDimensions(1).y + columnDimensions(1).height / 4}
+        y={50}
         x={columnDimensions(1).x + columnDimensions(1).margin}
         style={
           new PIXI.TextStyle({
             align: "center",
             fontFamily: "Futura",
-            fontSize: "5em",
+            fontSize: "4em",
             fontWeight: 800,
             fill: [white],
             wordWrap: true,

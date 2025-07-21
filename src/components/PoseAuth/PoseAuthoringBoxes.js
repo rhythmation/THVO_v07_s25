@@ -56,14 +56,14 @@ export const MainBox = (props) => {
           anchor={0.5}
         />
         <Text
-          text={"Conjecture: This is a sample text"}
+          text={"Make sure your FACE, ARMS, HANDS, and TORSO are clearly visible"}
           x={props.width * 0.5}
           y={props.height * 0.12}
           style={
             new TextStyle({
               align: "center",
               fontFamily: "Futura",
-              fontSize: props.width * 0.03,
+              fontSize: props.width * 0.02,
               fontWeight: 800,
               fill: [green],
               letterSpacing: 0,

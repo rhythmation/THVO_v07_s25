@@ -91,18 +91,13 @@ export default function LevelPlay(props) {
   }, [state.value, conjectureData, UUID, gameID]);
 
   /* ---------- tween message (shown inside Tween for 1 s) ---------- */
-  const tweenMsg =
-    state.value === 'tween'
-      ? 'Watch the character and match the movement!'
-      : '';
-
 
       useEffect(() => {
         if (state.value !== 'tween') return;
 
         // create a plain DOM node so React-Pixi never sees it
         const banner = document.createElement('div');
-        banner.textContent = 'Watch the character and match the movement!';
+        banner.textContent = 'Try to match these movements with your body';
         Object.assign(banner.style, {
           position: 'fixed',
           top: '50px',
@@ -117,7 +112,7 @@ export default function LevelPlay(props) {
         });
         document.body.appendChild(banner);
 
-        const timer = setTimeout(() => banner.remove(), tweenDuration * (tweenLoopCount+1));
+        const timer = setTimeout(() => banner.remove(), tweenDuration * (tweenLoopCount+2000));
 
         return () => {
           clearTimeout(timer);
@@ -130,7 +125,7 @@ export default function LevelPlay(props) {
       {/* NOTE: TO OPTIMIZE DATABASE STORAGE AND NOT INCUR ADDITIONAL COSTS, 
           VIDEO RECORDING IS ONLY RETAINED FOR THE STATES MENTIONED BELOW.
           SIMPLY ADD THE STATE NAME TO ENABLE RECORDING FOR THAT PHASE */}
-      {(['poseMatching', 'intuition', 'insight'].includes(state.value)) && (
+      {(['tween','poseMatching', 'intuition', 'insight'].includes(state.value)) && (
         <VideoRecorder phase={state.value} curricularID={UUID} gameID={gameID} />
       )}
 
@@ -210,7 +205,7 @@ export default function LevelPlay(props) {
           poseData={poseData}
           UUID={UUID}
           onComplete={() => send('NEXT')}
-          cursorTimer={debugMode ? 1000 : 5000}
+          cursorTimer={debugMode ? 1000 : 15000}
           gameID={gameID}
         />
       )}

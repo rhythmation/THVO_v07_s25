@@ -175,7 +175,7 @@ const Tween = ({
       {poseToRender && (
         <Pose
           poseData={poseToRender}
-          colAttr={{ width, height, x: 0, y: 0 }}
+          colAttr={{ width, height, x: 200, y: 0 }}
           similarityScores={null}
           modelBodySegments={null}
         />
