@@ -61,7 +61,7 @@ const PoseMatching = (props) => {
 
   // Initialize pose on mount
   useEffect(() => {
-    if (posesToMatch.length > 0 && !isTransitioning) {
+    if (posesToMatch.length > 0 && !isTransitioning && gameID) {
       console.log("Pose is starting...");
       writeToDatabasePoseStart(`Pose ${currentPoseIndex + 1}`, UUID, gameID);
     }
@@ -94,7 +94,10 @@ const PoseMatching = (props) => {
 
   // Handle pose matching logic
   const handlePoseMatch = useCallback(() => {
-    writeToDatabasePoseMatch(`Pose ${currentPoseIndex + 1}`, gameID);
+    if (gameID) {
+      writeToDatabasePoseMatch(`Pose ${currentPoseIndex + 1}`, gameID);
+    }
+    
     setIsTransitioning(true);
     setText("Great!");
     
