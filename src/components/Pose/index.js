@@ -10,12 +10,8 @@ import { LANDMARK_GROUPINGS } from "./landmark_utilities";
 import { landmarkToCoordinates, objMap } from "./pose_drawing_utilities";
 import chroma from "chroma-js";
 
-const matchedFill = chroma.scale([yellow.toString(16), pink.toString(16)]).domain([
-  0, 100,
-]);
-const matchedStroke = chroma.scale([blue.toString(16), pink.toString(16)]).domain([
-  0, 100,
-]);
+const matchedFill = chroma.scale(["#ff0000", "#ffff00", "#00ff00"]).domain([0, 50, 100]);
+const matchedStroke = chroma.scale(["#800000", "#808000", "#008000"]).domain([0, 50, 100]);
 
 // ****************************************************************
 // Utility functions

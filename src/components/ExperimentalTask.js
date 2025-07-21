@@ -115,7 +115,7 @@ const ExperimentalTask = (props) => {
             colAttr={columnDimensions(3)}   // ← NEW
           />
           <Text
-            text={"When you're ready to move on, click 'Next' to continue"}
+            text={"When you're ready to move on, click the 'Next Arrow' to continue"}
             y={columnDimensions(1).y + 7 * (columnDimensions(1).height / 8)}
             x={columnDimensions(1).x + columnDimensions(1).margin}
             style={
