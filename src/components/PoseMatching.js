@@ -25,7 +25,7 @@ const PoseMatching = (props) => {
   
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [text, setText] = useState(`Match the pose ${currentPoseIndex+1} on the left!`);
+  const [text, setText] = useState(`Match pose ${(currentPoseIndex) % 3 + 1} on the left!`);
   const [poseSimilarity, setPoseSimilarity] = useState([]);
   
   // Memoized calculations
@@ -108,7 +108,7 @@ const PoseMatching = (props) => {
       } else {
         // Move to next pose
         setCurrentPoseIndex(nextIndex);
-        setText(`Match the pose ${currentPoseIndex+2} on the left!`);
+        setText(`Match pose ${(currentPoseIndex + 1) % 3 + 1} on the left!`);
         setIsTransitioning(false);
       }
     }, TRANSITION_DELAY);
