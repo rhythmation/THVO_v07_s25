@@ -247,7 +247,7 @@ const Chapter = (props) => {
           const outros = loadedOutros.length > 0
             ? loadedOutros
             : [
-                { text: "Great job making shapes!", speaker: "narrator" },
+                { text: "You are a good Geometric Thinker!", speaker: "narrator" },
                 { text: "Ready for what's next?", speaker: "player" },
               ];
 

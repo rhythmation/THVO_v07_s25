@@ -41,7 +41,7 @@ export default function CursorMode({ callback, rowDimensions, colAttr, poseData 
   const rowDims = rowDimensions(2);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [btnPos, setBtnPos] = useState({
-    x: window.innerWidth - 3 * rowDims.margin,
+    x: window.innerWidth - 3 * rowDims.margin - 75,
     y: window.innerHeight * nextButtonY(state.context.placementCounter),
   });
 
@@ -49,7 +49,7 @@ export default function CursorMode({ callback, rowDimensions, colAttr, poseData 
 
   useEffect(() => {
     setBtnPos({
-      x: window.innerWidth - 3 * rowDims.margin,
+      x: window.innerWidth - 3 * rowDims.margin - 75,
       y: window.innerHeight * nextButtonY(state.context.placementCounter),
     });
   }, [state.context.placementCounter, rowDims.margin]);

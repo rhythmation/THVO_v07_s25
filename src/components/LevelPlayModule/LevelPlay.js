@@ -80,10 +80,10 @@ export default function LevelPlay(props) {
     const desc = conjectureData[UUID]['Text Boxes']['Conjecture Description'];
 
     if (state.value === 'intuition') {
-      setExpText(`Read aloud:\n\n${desc}\n\nAnswer TRUE or FALSE?`);
+      setExpText(`Read aloud:\n\n${desc}\n\nSay aloud if it is TRUE or FALSE?`);
       writeToDatabaseIntuitionStart(gameID);
     } else if (state.value === 'insight') {
-      setExpText(`Explain WHY:\n\n${desc}\n\nis TRUE or FALSE?`);
+      setExpText(`Now explain WHY you think:\n\n${desc}\n\n it is TRUE or FALSE?`);
       writeToDatabaseIntuitionEnd(gameID);
     } else {
       setExpText('');
