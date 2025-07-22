@@ -233,8 +233,8 @@ const Chapter = (props) => {
           const intros = loadedIntros.length > 0
             ? loadedIntros
             : [
-                { text: "Welcome to the chapter.", speaker: "narrator" },
-                { text: "Let's begin our journey.", speaker: "player" },
+                { text: "Welcome to ShapeLand.", speaker: "narrator" },
+                { text: "Let's begin our journey!", speaker: "player" },
               ];
           
           const loadedOutros = chapterDialogues
@@ -247,7 +247,7 @@ const Chapter = (props) => {
           const outros = loadedOutros.length > 0
             ? loadedOutros
             : [
-                { text: "Great job completing the chapter!", speaker: "narrator" },
+                { text: "Great job making shapes!", speaker: "narrator" },
                 { text: "Ready for what's next?", speaker: "player" },
               ];
 
