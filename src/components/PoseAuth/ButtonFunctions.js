@@ -3,23 +3,35 @@ import { writeToDatabasePoseAuth } from "../../firebase/database";
 // Blocking capture if landmarks are missing or invalid
 function isPoseValid(poseData, state) {
    const requiredLandmarkKeys = [
-      'poseLandmarks',
+      'faceLandmarks',
       'leftHandLandmarks',
       'rightHandLandmarks',
-      'faceLandmarks',
    ];
 
    const VISIBILITY_THRESHOLD = 0.1;
-   const VALID_RATIO_THRESHOLD = 0.77;  // Need to experiment for different use cases
+   const VALID_RATIO_THRESHOLD = 0.77;
 
-   for (const key of requiredLandmarkKeys) {
+   // Stage 1: Check for missing face/hands
+   const missingGroups = requiredLandmarkKeys.filter(
+      (key) => !Array.isArray(poseData[key]) || poseData[key].length === 0
+   );
+
+   if (missingGroups.length > 0) {
+      const formattedNames = missingGroups
+         .map((key) => key.replace('Landmarks', '').replace(/^./, (c) => c.toUpperCase()))
+         .join(', ');
+      alert(
+         `⚠️ Cannot capture pose.\n\nWe're missing the following data: ${formattedNames}.\n` +
+         `Please ensure your ${formattedNames.toLowerCase()} ${missingGroups.length === 1 ? 'is' : 'are'} fully visible on the camera for the "${state}" pose.`
+      );
+      return false;
+   }
+
+   // Stage 2: Validate all groups including poseLandmarks
+   const allKeys = ['poseLandmarks', ...requiredLandmarkKeys];
+
+   for (const key of allKeys) {
       const group = poseData[key];
-
-      if (!Array.isArray(group) || group.length === 0) {
-         alert(`❌ Cannot capture. Missing ${key} in the ${state} pose.`);
-         return false;
-      }
-
       let validCount = 0;
 
       for (const kpt of group) {
@@ -36,7 +48,11 @@ function isPoseValid(poseData, state) {
       const ratio = validCount / group.length;
 
       if (ratio < VALID_RATIO_THRESHOLD) {
-         alert(`❌ Cannot capture. Too many invalid ${key} landmarks in the ${state} pose.\n(${Math.round(ratio * 100)}% valid)`);
+         const label = key.replace('Landmarks', '').replace(/^./, (c) => c.toUpperCase());
+         alert(
+            `❌ Cannot capture.\n\nToo many invalid points in "${label}" for the "${state}" pose.\n` +
+            `We detected only ${Math.round(ratio * 100)}% valid points. Please adjust your position or lighting.`
+         );
          return false;
       }
    }
