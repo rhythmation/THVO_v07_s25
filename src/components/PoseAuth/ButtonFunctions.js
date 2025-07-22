@@ -21,8 +21,8 @@ function isPoseValid(poseData, state) {
          .map((key) => key.replace('Landmarks', '').replace(/^./, (c) => c.toUpperCase()))
          .join(', ');
       alert(
-         `⚠️ Cannot capture pose.\n\nWe're missing the following data: ${formattedNames}.\n` +
-         `Please ensure your ${formattedNames.toLowerCase()} ${missingGroups.length === 1 ? 'is' : 'are'} fully visible on the camera for the "${state}" pose.`
+         `⚠️ Cannot capture pose.\n` +
+         `Please make sure your ${formattedNames.toLowerCase()} ${missingGroups.length === 1 ? 'is' : 'are'} fully visible on the camera for the "${state}" pose.`
       );
       return false;
    }
