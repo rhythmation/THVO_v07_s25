@@ -24,6 +24,8 @@ return(
           tolerances={tolerances}
           UUID = {UUID}
           posesToMatch={[
+            poses,
+            poses,
             poses
           ].flat()}
           columnDimensions={columnDimensions}
