@@ -25,7 +25,7 @@ const PoseMatching = (props) => {
   
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [text, setText] = useState(`Match pose ${(currentPoseIndex) % 3 + 1} on the left!`);
+  const [text, setText] = useState(`Match pose ${Math.floor(currentPoseIndex / 3) + 1}.${(currentPoseIndex) % 3 + 1} on the left!`);
   const [poseSimilarity, setPoseSimilarity] = useState([]);
   
   // Memoized calculations
@@ -63,7 +63,7 @@ const PoseMatching = (props) => {
   useEffect(() => {
     if (posesToMatch.length > 0 && !isTransitioning && gameID) {
       console.log("Pose is starting...");
-      writeToDatabasePoseStart(`Pose ${currentPoseIndex + 1}`, UUID, gameID);
+      writeToDatabasePoseStart(`Pose ${Math.floor(currentPoseIndex / 3) + 1}-${(currentPoseIndex) % 3 + 1}`, UUID, gameID);
     }
   }, [currentPoseIndex, isTransitioning, posesToMatch.length, UUID, gameID]);
 
@@ -95,7 +95,7 @@ const PoseMatching = (props) => {
   // Handle pose matching logic
   const handlePoseMatch = useCallback(() => {
     if (gameID) {
-      writeToDatabasePoseMatch(`Pose ${currentPoseIndex + 1}`, gameID);
+      writeToDatabasePoseMatch(`Pose ${Math.floor((currentPoseIndex) / 3) + 1}-${(currentPoseIndex) % 3 + 1}`, gameID);
     }
     
     setIsTransitioning(true);
@@ -111,7 +111,7 @@ const PoseMatching = (props) => {
       } else {
         // Move to next pose
         setCurrentPoseIndex(nextIndex);
-        setText(`Match pose ${(currentPoseIndex + 1) % 3 + 1} on the left!`);
+        setText(`Match pose ${Math.floor(nextIndex / 3) + 1}.${(nextIndex) % 3 + 1} on the left!`);
         setIsTransitioning(false);
       }
     }, TRANSITION_DELAY);
