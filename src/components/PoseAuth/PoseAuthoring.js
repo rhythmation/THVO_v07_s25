@@ -113,7 +113,7 @@ const PoseAuthoring = (props) => {
 
 const handleReset = () => {
       const confirmLeave = window.confirm(
-        "You didn't save your work. Are you sure you want to leave?"
+        "Are you sure you want to reset all poses?"
       );
       if (confirmLeave) {
         setNotificationMessage("Clearing poses.");
