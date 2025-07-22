@@ -126,12 +126,11 @@ const CurricularModule = (props) => {
         }
         await update(ref(db), updates);
 
-        resetCurricularValues();
-        mainCallback();
+        enhancedMainCallback();
       } catch (error) {
         console.error('Error during deletion:', error);
         alert("Failed to delete game. Please try again.");
-        mainCallback();
+        enhancedMainCallback();
       }
     }
   };
@@ -206,7 +205,12 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"BACK"}
             fontWeight={800}
-            callback={enhancedMainCallback}
+            callback={() => {
+              const confirmBack = window.confirm("The game hasnt been saved. Are you sure you want to go back?");
+              if (confirmBack) {
+                enhancedMainCallback();
+              }
+            }}
           />
           <RectButton
             height={height * 0.13}
@@ -236,7 +240,7 @@ const CurricularModule = (props) => {
             callback={async () => {
               const success = await saveGame(Curriculum.getCurrentUUID(), false);
               if (success) {
-                mainCallback();
+                enhancedMainCallback();
               }
             }}
           />
@@ -253,7 +257,7 @@ const CurricularModule = (props) => {
             callback={async () => {
               const success = await saveGame(Curriculum.getCurrentUUID(), true);
               if (success) {
-                mainCallback();
+                enhancedMainCallback();
               }
             }}
           />
