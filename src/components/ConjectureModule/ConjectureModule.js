@@ -176,6 +176,7 @@ const ConjectureModule = (props) => {
       try {
         await deleteFromDatabaseConjecture(currentUUID);
         // Reset everything after successful deletion
+        currentConjecture.clearConjecture();
         resetConjectureValues();
         backCallback();
       } catch (error) {
@@ -189,6 +190,7 @@ const ConjectureModule = (props) => {
   const handlePublish = async (currentUUID) => {
     const success = await writeToDatabaseConjecture(currentUUID);
     if (success) {
+      currentConjecture.clearConjecture();
       resetConjectureValues();
       backCallback();
     }
@@ -197,6 +199,7 @@ const ConjectureModule = (props) => {
   const handleSaveDraft = async (currentUUID) => {
     const success = await writeToDatabaseConjectureDraft(currentUUID);
     if (success) {
+      currentConjecture.clearConjecture();
       resetConjectureValues();
       backCallback();
     }
@@ -318,6 +321,7 @@ const ConjectureModule = (props) => {
             const confirmLeave = window.confirm("You didnt save your work. Are you sure you want to leave?");
             if (confirmLeave) {
               // if User confirmed, clear local storage and go back
+              currentConjecture.clearConjecture();
               resetConjectureValues();
               backCallback();
             }
@@ -366,6 +370,7 @@ const ConjectureModule = (props) => {
           text={"BACK"}
           fontWeight={800}
           callback={() => {
+            currentConjecture.clearConjecture();
             resetConjectureValues();
             backCallback();
           }}
