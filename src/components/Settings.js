@@ -112,32 +112,23 @@ const Settings = ({ width, height, x, y, onClose }) => {
   />
 
 
-      <Text text={"Music:"} style={{ fontSize: 20, fill: "black" }} x={20} y={70} />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={80}
-        text={settings.music ? "ON" : "OFF"}
-        color={settings.music ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("music")}
-
-      />
+<SettingRow
+  label="Music:"
+  value={settings.music}
+  x={20}
+  y={80}
+  onToggle={() => toggleSetting("music")}
+/>
 
       {/* Narrative  part  */}
       <Text text={"Narrative"} style={{ fontSize: 12, fill: "black" }} x={20} y={120} />
-      <Text text={"Story:"} style={{ fontSize: 20, fill: "black" }} x={20} y={130} />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={130}
-        text={settings.story ? "ON" : "OFF"}
-        color={settings.story ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("story")}
-      />
+      <SettingRow
+  label="Story:"
+  value={settings.story}
+  x={20}
+  y={130}
+  onToggle={() => toggleSetting("story")}
+/>
       {/* Motion part  */}
       <Text text={"Motion"} style={{ fontSize: 12, fill: "black" }} x={20} y={160} />
 
