@@ -132,67 +132,43 @@ const Settings = ({ width, height, x, y, onClose }) => {
       {/* Motion part  */}
       <Text text={"Motion"} style={{ fontSize: 12, fill: "black" }} x={20} y={160} />
 
-      <Text text={"M-Clips:"} style={{ fontSize: 20, fill: "black" }} x={20} y={170} />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={170}
-        text={settings.mclips ? "ON" : "OFF"}
-        color={settings.mclips ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("mclips")}
-      />
+      <SettingRow
+  label="M-Clips:"
+  value={settings.mclips}
+  x={20}
+  y={170}
+  onToggle={() => toggleSetting("mclips")}
+/>
+
      
-      <Text text={"Tween:"} style={{ fontSize: 20, fill: "black" }} x={20} y={190} />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={200}
-        text={settings.tween ? "ON" : "OFF"}
-        color={settings.tween ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("tween")}
-      />
+      <SettingRow
+  label="Tween:"
+  value={settings.tween}
+  x={20}
+  y={200}
+  onToggle={() => toggleSetting("tween")}
+/>
+
           {/* Scaffolds part  */}
       <Text text={"Scaffolds"} style={{ fontSize: 12, fill: "black" }} x={20} y={230} /> 
 
-      <Text
-        text={"Calibration:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={20}
-        y={240}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={250}
-        text={settings.calibration ? "ON" : "OFF"}
-        color={settings.calibration ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("calibration")}
-        
-      />
+      <SettingRow
+  label="Calibration:"
+  value={settings.calibration}
+  x={20}
+  y={240}
+  onToggle={() => toggleSetting("calibration")}
+/>
 
-     <Text
-        text={"Hints:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={20}
-        y={260}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width / 3 - 50}
-        y={270}
-        text={settings.Hints ? "ON" : "OFF"}
-        color={settings.Hints ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("Hints")}
-        
-      />
+
+     <SettingRow
+  label="Hints:"
+  value={settings.Hints}
+  x={20}
+  y={260}
+  onToggle={() => toggleSetting("Hints")}
+/>
+
       
 
       <Text text={"No of Hints:"} style={{ fontSize: 20, fill: "black" }} x={20} y={280} />
@@ -240,38 +216,22 @@ const Settings = ({ width, height, x, y, onClose }) => {
      {/* Data part  */}
       
       <Text text={"Data"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={50} />
-      <Text
-        text={"Audio Recording:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={60}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={65}
-        text={settings.audioRecording ? "ON" : "OFF"}
-        color={settings.audioRecording ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("audioRecording")}
-      />
-      <Text
-        text={"Video Recording:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={80}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={85}
-        text={settings.videoRecording ? "ON" : "OFF"}
-        color={settings.videoRecording ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("videoRecording")}
-      />
+      <SettingRow
+  label="Audio Recording:"
+  value={settings.audioRecording}
+  x={width/2 + 20}
+  y={60}
+  onToggle={() => toggleSetting("audioRecording")}
+/>
+
+      <SettingRow
+  label="Video Recording:"
+  value={settings.videoRecording}
+  x={width/2 + 20}
+  y={85}
+  onToggle={() => toggleSetting("videoRecording")}
+/>
+
 
       <Text text={"FPS:"} style={{ fontSize: 20, fill: "black" }} x={width / 2 + 20} y={100} />
       <Text
@@ -283,93 +243,52 @@ const Settings = ({ width, height, x, y, onClose }) => {
 
        {/* Mode part  */}
       <Text text={"Mode"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={140} />
-      <Text
-        text={"Research:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={150}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={160}
-        text={settings.research ? "ON" : "OFF"}
-        color={settings.research ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("research")}
-      />
+      <SettingRow
+  label="Research:"
+  value={settings.research}
+  x={width/2 + 20}
+  y={150}
+  onToggle={() => toggleSetting("research")}
+/>
 
-      <Text
-        text={"Teaching:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={170}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={190}
-        text={settings.teaching ? "ON" : "OFF"}
-        color={settings.teaching ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("teaching")}
-      />
+
+      <SettingRow
+  label="Teaching:"
+  value={settings.teaching}
+  x={width/2 + 20}
+  y={170}
+  onToggle={() => toggleSetting("teaching")}
+/>
+
 
        {/* access part  */}
        <Text text={"access"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={220} />
 
-       <Text
-        text={"Closed-Captions:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={230}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={230}
-        text={settings.closedCaptions ? "ON" : "OFF"}
-        color={settings.closedCaptions ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("closedCaptions")}
-      />
+       <SettingRow
+  label="Closed-Captions:"
+  value={settings.closedCaptions}
+  x={width/2 + 20}
+  y={230}
+  onToggle={() => toggleSetting("closedCaptions")}
+/>
 
-      <Text
-        text={"VisualAssist:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={250}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={250}
-        text={settings.visualAssist ? "ON" : "OFF"}
-        color={settings.visualAssist ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("visualAssist")}
-      />
 
-      <Text
-        text={"TextToSpeech:"}
-        style={{ fontSize: 20, fill: "black" }}
-        x={width / 2 + 20}
-        y={270}
-      />
-      <RectButton
-        width={100}
-        height={30}
-        x={width - 120}
-        y={275}
-        text={settings.textToSpeech ? "ON" : "OFF"}
-        color={settings.textToSpeech ? "green" : "red"}
-        fontColor={"white"}
-        callback={() => toggleSetting("textToSpeech")}
-      />
+      <SettingRow
+  label="Visual Assist:"
+  value={settings.visualAssist}
+  x={width/2 + 20}
+  y={250}
+  onToggle={() => toggleSetting("visualAssist")}
+/>
+
+
+      <SettingRow
+  label="Text to Speech:"
+  value={settings.textToSpeech}
+  x={width/2 + 20}
+  y={270}
+  onToggle={() => toggleSetting("textToSpeech")}
+/>
 
       <RectButton
         width={160}
