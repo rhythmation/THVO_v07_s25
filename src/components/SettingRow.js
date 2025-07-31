@@ -1,35 +1,31 @@
 import { Container, Text } from "@inlet/react-pixi";
 import RectButton from "./RectButton";
-// labelWidth is only needed if you later want vertical guidelines;
-// for now we just expose buttonX / buttonWidth so each row is tweakable.
+
 export default function SettingRow({
   label,
   value,
   x,
   y,
   onToggle,
-  buttonX = 200,       // default x for the toggle pill
-  buttonWidth = 90,    // default width of pill
+  buttonX   = 260,   // ⬅️ more space between label & toggle
+  buttonW   = 96,    // ⬅️ slightly wider pill
 }) {
-
   return (
     <Container position={[x, y]}>
       <Text
         text={label}
-              style={{
+        style={{
           fontFamily: "Arial",
           fontWeight: "bold",
           fill: 0x333333,
+          letterSpacing: 1.2,   // ⬅️ nicer tracking
         }}
-        x={0}
-        y={0}
       />
       <RectButton
-        width={buttonWidth}
+        width={buttonW}
         height={32}
         x={buttonX}
-        y={2}          /* slight top padding */
-
+        y={2}
         text={value ? "ON" : "OFF"}
         color={value ? "green" : "red"}
         fontColor="white"
@@ -38,4 +34,3 @@ export default function SettingRow({
     </Container>
   );
 }
- 
