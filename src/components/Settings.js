@@ -3,9 +3,27 @@ import { Container, Graphics, Text } from "@inlet/react-pixi";
 import RectButton from "./RectButton";
 import SettingRow from "./SettingRow";
 
+const sectionHeaderStyle = {
+  fontFamily: "Arial",
+  fontSize:   12,
+  fontWeight: "bold",
+  fill:       "black",
+};
+
+const labelTextStyle = {
+  fontFamily: "Arial",
+  fontSize:   16,
+  fill:       "black",
+};
 
 
 const Settings = ({ width, height, x, y, onClose }) => {
+  // inside Settings, before your return:
+const leftColX    = 20;
+const rightColX   = width / 2 + 20;
+const firstRowY   = 60;      // starting y-offset for the first toggle
+const rowSpacing  = 35;      // vertical space between each row
+
   // State to manage all settings
   const [settings, setSettings] = useState({
     sound: true,
@@ -101,22 +119,25 @@ const Settings = ({ width, height, x, y, onClose }) => {
       />
 
       {/* Left Column Settings */}
-       {/* Audio part  */}
-      <Text text={"Audio"} style={{ fontSize: 12, fill: "black" }} x={20} y={40} />
-      <SettingRow
-    label="Sound:"
-    value={settings.sound}
-    x={20}
-    y={50}
-    onToggle={() => toggleSetting("sound")}
-  />
-
+       <Text
+   text="Audio"
+   style={sectionHeaderStyle}
+   x={leftColX}
+   y={firstRowY - 20}
+ />
+ <SettingRow
+   label="Sound:"
+   value={settings.sound}
+   x={leftColX}
+   y={firstRowY + rowSpacing * 0}
+   onToggle={() => toggleSetting("sound")}
+ />
 
 <SettingRow
   label="Music:"
   value={settings.music}
-  x={20}
-  y={80}
+  x={leftColX}
+  y={firstRowY + rowSpacing * 1}
   onToggle={() => toggleSetting("music")}
 />
 
@@ -219,27 +240,32 @@ const Settings = ({ width, height, x, y, onClose }) => {
       <SettingRow
   label="Audio Recording:"
   value={settings.audioRecording}
-  x={width/2 + 20}
-  y={60}
+  x={rightColX}
+  y={firstRowY + rowSpacing * 0}
   onToggle={() => toggleSetting("audioRecording")}
 />
 
-      <SettingRow
+     <SettingRow
   label="Video Recording:"
   value={settings.videoRecording}
-  x={width/2 + 20}
-  y={85}
+  x={rightColX}
+  y={firstRowY + rowSpacing * 1}
   onToggle={() => toggleSetting("videoRecording")}
 />
 
 
-      <Text text={"FPS:"} style={{ fontSize: 20, fill: "black" }} x={width / 2 + 20} y={100} />
       <Text
-        text={`${settings.fps}`}
-        style={{ fontSize: 16, fill: "black" }}
-        x={width - 120}
-        y={110}
-      />
+  text="FPS:"
+  style={labelTextStyle}
+  x={rightColX}
+  y={firstRowY + rowSpacing * 2 + 4}      // +4 to vertically center compared to your 16px font
+/>
+<Text
+  text={`${settings.fps}`}
+  style={labelTextStyle}
+  x={rightColX + 120}                     // 120px to the right of the label
+  y={firstRowY + rowSpacing * 2 + 4}
+/>
 
        {/* Mode part  */}
       <Text text={"Mode"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={140} />
