@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import LevelPlay from "../LevelPlayModule/LevelPlay";
 import { Curriculum } from "../CurricularModule/CurricularModule";
 import usePoseData from "../utilities/PoseData";
-import PixiLoader from "../utilities/PixiLoader";
+import { Text, Container } from "@inlet/react-pixi";
+import RectButton from "../RectButton";
 
 const PlayGame = (props) => {
   const [shownIntros, setShownIntros] = useState(new Set());
@@ -16,7 +17,7 @@ const PlayGame = (props) => {
   const hasShownIntro = (chapterIdx) => shownIntros.has(chapterIdx);
 
   const { columnDimensions, rowDimensions, height, width, backCallback, gameUUID} = props;
-  const {poseData, canPlay} = usePoseData();
+  const {poseData, canPlay, error, retryInitialization} = usePoseData();
 
   const uuidsList = Curriculum.getCurrentConjectures();
 
@@ -31,11 +32,58 @@ const PlayGame = (props) => {
   const [state, send] = useMachine(() => PlayGameMachine(uuidsList));
   const uuidIDX = state.context.uuidIndex;
 
-  if (!canPlay){
+  if (error) {
+    // Show error + retry button
     return (
-      <>
-        <PixiLoader width={width} height={height} />
-      </>
+      <Container>
+        <Text
+          text={error}
+          x={width / 2}
+          y={height / 2 - 30}
+          anchor={0.5}
+          style={{
+            fill: 0xff5555,
+            fontSize: 24,
+            fontWeight: "bold",
+            fontFamily: "Arial",
+            align: "center",
+          }}
+        />
+        <RectButton
+          x={width / 2 - 100}
+          y={height / 2 + 10}
+          width={200}
+          height={40}
+          color={0x000000}
+          alpha={0.8}
+          borderWidth={2}
+          borderColor={0xffffff}
+          text="Retry"
+          fontSize={18}
+          fontColor={0xffffff}
+          fontWeight="bold"
+          callback={retryInitialization}
+        />
+      </Container>
+    );
+  } else if (!canPlay) {
+    // Show initializing / loading message
+    return (
+      <Container>
+        <Text
+          text="Trying to initialize devices..."
+          x={width / 2}
+          y={height / 2}
+          anchor={0.5}
+          style={{
+            fill: 0xffffff,
+            fontSize: 24,
+            fontWeight: "bold",
+            fontFamily: "Arial",
+            align: "center",
+          }}
+        />
+      </Container>
     );
   }
 
