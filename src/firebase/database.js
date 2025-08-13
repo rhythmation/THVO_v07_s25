@@ -24,6 +24,27 @@ let date;
 let readableDate;
 let loginTime;
 
+// --- Device identity (minimal) ---
+let deviceId, deviceNickname, deviceSlug;
+const sanitize = (s) => (s || "").toString().replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 64);
+
+const ensureDeviceIdentity = () => {
+  let id = localStorage.getItem("thvo_device_id");
+  if (!id) {
+    id = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : uuidv4();
+    localStorage.setItem("thvo_device_id", id);
+  }
+  let nick = localStorage.getItem("thvo_device_nickname");
+  if (!nick || !nick.trim()) {
+    const plat = navigator?.userAgentData?.platform || navigator?.platform || "device";
+    nick = sanitize(plat);
+    localStorage.setItem("thvo_device_nickname", nick);
+  }
+  deviceId = id;
+  deviceNickname = nick;
+  deviceSlug = sanitize(`${nick}-${id.substring(0, 8)}`);
+};
+
 // Declare variables that change on game state change
 let eventType;
 let gameId;
@@ -38,6 +59,9 @@ onAuthStateChanged(auth, (user) => {
   date = new Date();
   loginTime = date.toUTCString();
   readableDate = formatDate(date);
+
+  // NEW: ensure we have a stable per-device identity
+  ensureDeviceIdentity();
 });
 
 // Function to Format date into readable format
@@ -88,13 +112,16 @@ export const writeToDatabase = async (poseData, UUID, frameRate, gameId) => {
 
   // only runs if event type is established
   if(eventType !== null){
-    const dbRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName+" "+loginTime}/${UUID}/${eventType}`);
+    // UPDATED: include device layer + separate loginTime dir
+    const dbRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/${eventType}`);
 
-  // Create an object to send to the database
-  // This object includes the userId, poseData, conjectureId, frameRate, and timestamp and
+    // Create an object to send to the database
+    // This object includes the userId, poseData, conjectureId, frameRate, and timestamp and
     const dataToSend = {
       userId,
       userName,
+      deviceId,          // NEW
+      deviceNickname,    // NEW
       poseData: JSON.stringify(poseData),
       eventType,
       timestamp,
@@ -852,22 +879,24 @@ export const writeToDatabaseNewSession = async (CurrId, CurrName, role) => {
   gameId = CurrName;
   userRole = role;
 
-  // Create a reference path to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}`;
+  // UPDATED: include device layer
+  const sessionRoot = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}`;
 
   // Create an object to send to the database
   // Some of these are placeholders for future values that aren't implemented yet i.e. Hints
   const promises = [
     set(ref(db, `_GameData/${gameId}/CurricularID`), CurrId),
-    set(ref(db, `${userSession}/UserId`), userId),
-    set(ref(db, `${userSession}/UserRole`), userRole),
-    set(ref(db, `${userSession}/${loginTime}/GameStart`), timestamp),
-    set(ref(db, `${userSession}/${loginTime}/GameStartGMT`), timestampGMT),
-    set(ref(db, `${userSession}/${loginTime}/DaRep`), 'null'),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintEnabled`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintCount`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintOrder`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/LatinSquareOrder`), "null"),
+    set(ref(db, `${sessionRoot}/UserId`), userId),
+    set(ref(db, `${sessionRoot}/UserRole`), userRole),
+    set(ref(db, `${sessionRoot}/DeviceID`), deviceId),               // NEW
+    set(ref(db, `${sessionRoot}/DeviceNickname`), deviceNickname),   // NEW
+    set(ref(db, `${sessionRoot}/GameStart`), timestamp),
+    set(ref(db, `${sessionRoot}/GameStartGMT`), timestampGMT),
+    set(ref(db, `${sessionRoot}/DaRep`), 'null'),
+    set(ref(db, `${sessionRoot}/Hints/HintEnabled`), "null"),
+    set(ref(db, `${sessionRoot}/Hints/HintCount`), "null"),
+    set(ref(db, `${sessionRoot}/Hints/HintOrder`), "null"),
+    set(ref(db, `${sessionRoot}/LatinSquareOrder`), "null"),
   ];
 
   // Return the promise that push() returns
@@ -885,8 +914,8 @@ export const writeToDatabasePoseStart = async (poseNumber, ConjectureId, gameId)
   eventType = poseNumber
   conjectureId = ConjectureId;
 
-  // Create a reference path to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -905,8 +934,8 @@ export const writeToDatabasePoseMatch = async (poseNumber, gameId) => {
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -928,8 +957,8 @@ export const writeToDatabaseIntuitionStart = async (gameId) => {
   // event type for pose data
   eventType = "Intuition";
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -951,8 +980,8 @@ export const writeToDatabaseIntuitionEnd = async (gameId) => {
   // event type for pose data
   eventType = "Insight";
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -971,8 +1000,8 @@ export const writeToDatabaseInsightStart = async (gameId = undefined) => {
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -991,8 +1020,8 @@ export const writeToDatabaseInsightEnd = async (gameId = undefined) => {
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -1026,13 +1055,26 @@ export const getFromDatabaseByGame = async (selectedGame, gameId, selectedStart,
     if (poseQuerySnapshot.exists() && eventQuerySnapshot.exists()) {
       const poseData = poseQuerySnapshot.val();
       const eventData = eventQuerySnapshot.val();
-      //console.log('Data:', poseData);
-      
-      // // Convert event log to JSON and download
+
+      // Determine device label for filenames (single device => that slug; else MULTI_DEVICE)
+      const collectDeviceLabel = (tree) => {
+        const setD = new Set();
+        for (const day in (tree || {})) {
+          const users = tree[day] || {};
+          for (const uname in users) {
+            const devs = users[uname] || {};
+            for (const dslug in devs) setD.add(dslug);
+          }
+        }
+        return setD.size === 1 ? [...setD][0] : "MULTI_DEVICE";
+      };
+      const deviceLabel = sanitize(collectDeviceLabel(eventData));
+
+      // Convert event log to JSON and download
       const eventjsonStr = JSON.stringify(eventData, null, 2);
       const eventDownload = document.createElement('a');
       eventDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(eventjsonStr));
-      eventDownload.setAttribute('download', `${formattedGame}_event_log_${formattedStart}_to_${formattedEnd}.json`);
+      eventDownload.setAttribute('download', `${formattedGame}__${deviceLabel}__event_log_${formattedStart}_to_${formattedEnd}.json`);
       document.body.appendChild(eventDownload);
       eventDownload.click();
       document.body.removeChild(eventDownload);
@@ -1041,7 +1083,7 @@ export const getFromDatabaseByGame = async (selectedGame, gameId, selectedStart,
       const posejsonStr = JSON.stringify(poseData, null, 2);
       const poseDownload = document.createElement('a');
       poseDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(posejsonStr));
-      poseDownload.setAttribute('download', `${formattedGame}_pose_data_${formattedStart}_to_${formattedEnd}.json`);
+      poseDownload.setAttribute('download', `${formattedGame}__${deviceLabel}__pose_data_${formattedStart}_to_${formattedEnd}.json`);
       document.body.appendChild(poseDownload);
       poseDownload.click();
       document.body.removeChild(poseDownload);
@@ -1066,10 +1108,24 @@ export const getFromDatabaseByGameCSV = async (selectedGame, gameId, selectedSta
 
     if (eventQuerySnapshot.exists()) {
       const eventData = eventQuerySnapshot.val();
+
+      // Determine device label (same logic as JSON export)
+      const collectDeviceLabel = (tree) => {
+        const setD = new Set();
+        for (const day in (tree || {})) {
+          const users = tree[day] || {};
+          for (const uname in users) {
+            const devs = users[uname] || {};
+            for (const dslug in devs) setD.add(dslug);
+          }
+        }
+        return setD.size === 1 ? [...setD][0] : "MULTI_DEVICE";
+      };
+      const deviceLabel = sanitize(collectDeviceLabel(eventData));
       
       // Convert to JSON string and let convertJsonToCsv handle the download
       const eventjsonStr = JSON.stringify(eventData);
-      const result = await convertJsonToCsv(eventjsonStr, formattedGame, formattedStart, formattedEnd);
+      const result = await convertJsonToCsv(eventjsonStr, `${formattedGame}__${deviceLabel}`, formattedStart, formattedEnd);
       
       return result;
     } else {
@@ -1300,4 +1356,3 @@ export const findGameIdByName = async (name) => {
     return null;
   }
 };
-
