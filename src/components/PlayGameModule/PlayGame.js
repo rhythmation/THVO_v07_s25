@@ -1,6 +1,5 @@
 import Button from "../Button";
 import PlayGameMachine from "./PlayGameMachine";
-import { white, red } from "../../utils/colors";
 import { useMachine } from "@xstate/react";
 import { useEffect, useState } from "react";
 import LevelPlay from "../LevelPlayModule/LevelPlay";
@@ -8,7 +7,7 @@ import { Curriculum } from "../CurricularModule/CurricularModule";
 import usePoseData from "../utilities/PoseData";
 import { Text, Container } from "@inlet/react-pixi";
 import RectButton from "../RectButton";
-import { green } from "../../utils/colors";
+import { green, black, white, red } from "../../utils/colors";
 import PixiLoader from "../utilities/PixiLoader";
 
 const PlayGame = (props) => {
@@ -63,6 +62,19 @@ const PlayGame = (props) => {
           fontColor={0xffffff}
           fontWeight="bold"
           callback={retryInitialization}
+        />
+        <RectButton
+          x={width / 2 - 100}
+          y={height / 2 + 75}
+          width={500}
+          height={100}
+          color={black}
+          alpha={0.8}
+          text="Back"
+          fontSize={18}
+          fontColor={white}
+          fontWeight="bold"
+          callback={backCallback}
         />
       </Container>
     );
