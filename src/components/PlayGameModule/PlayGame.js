@@ -8,6 +8,8 @@ import { Curriculum } from "../CurricularModule/CurricularModule";
 import usePoseData from "../utilities/PoseData";
 import { Text, Container } from "@inlet/react-pixi";
 import RectButton from "../RectButton";
+import { green } from "../../utils/colors";
+import PixiLoader from "../utilities/PixiLoader";
 
 const PlayGame = (props) => {
   const [shownIntros, setShownIntros] = useState(new Set());
@@ -52,12 +54,10 @@ const PlayGame = (props) => {
         <RectButton
           x={width / 2 - 100}
           y={height / 2 + 10}
-          width={200}
-          height={40}
-          color={0x000000}
+          width={500}
+          height={100}
+          color={green}
           alpha={0.8}
-          borderWidth={2}
-          borderColor={0xffffff}
           text="Retry"
           fontSize={18}
           fontColor={0xffffff}
@@ -70,10 +70,11 @@ const PlayGame = (props) => {
     // Show initializing / loading message
     return (
       <Container>
+        <PixiLoader width={width} height={height} />
         <Text
           text="Trying to initialize devices..."
           x={width / 2}
-          y={height / 2}
+          y={height / 2 + 100}
           anchor={0.5}
           style={{
             fill: 0xffffff,
