@@ -8,7 +8,7 @@ import usePoseData from "../utilities/PoseData";
 
 const PoseTest = (props) => {
     const { height, width, columnDimensions, rowDimensions, editCallback, conjectureCallback, UUID, gameID } = props;
-    const poseData = usePoseData();
+    const {poseData} = usePoseData();
 
     // Use background and then initiate PoseTestMatch
     return (

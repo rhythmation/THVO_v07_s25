@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import LevelPlay from "../LevelPlayModule/LevelPlay";
 import { Curriculum } from "../CurricularModule/CurricularModule";
 import usePoseData from "../utilities/PoseData";
+import PixiLoader from "../utilities/PixiLoader";
 
 const PlayGame = (props) => {
   const [shownIntros, setShownIntros] = useState(new Set());
@@ -15,7 +16,7 @@ const PlayGame = (props) => {
   const hasShownIntro = (chapterIdx) => shownIntros.has(chapterIdx);
 
   const { columnDimensions, rowDimensions, height, width, backCallback, gameUUID} = props;
-  const poseData = usePoseData();
+  const {poseData, canPlay} = usePoseData();
 
   const uuidsList = Curriculum.getCurrentConjectures();
 
@@ -29,6 +30,14 @@ const PlayGame = (props) => {
 
   const [state, send] = useMachine(() => PlayGameMachine(uuidsList));
   const uuidIDX = state.context.uuidIndex;
+
+  if (!canPlay){
+    return (
+      <>
+        <PixiLoader width={width} height={height} />
+      </>
+    );
+  }
 
   return (
     <>
