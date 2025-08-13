@@ -8,7 +8,7 @@ import { useMachine } from "@xstate/react";
 import { PoseAuthMachine } from "../../machines/poseauthMachine";
 import { capturePose, resetConjecture } from "./ButtonFunctions";
 import { calculateFaceDepth } from "../Pose/landmark_utilities";
-import { Text, Graphics } from '@inlet/react-pixi';
+import { Text, Container } from "@inlet/react-pixi";
 import usePoseData from "../utilities/PoseData";
 import { useRef } from "react";
 
@@ -32,7 +32,7 @@ const NotificationBox = ({ message, textSize }) => {
 
 const PoseAuthoring = (props) => {
     const { height, width, columnDimensions, rowDimensions, conjectureCallback } = props;
-    const poseData = usePoseData();
+    const {poseData, cameraStatus, error, retryInitialization} = usePoseData();
     const playerColumn = props.columnDimensions(3);
     const [poseSimilarity, setPoseSimilarity] = useState([]);
     const [state, send] = useMachine(PoseAuthMachine);
@@ -235,6 +235,73 @@ const handleReset = () => {
     // *********************************
     // Returned objects
     // *********************************
+
+    if (error) {
+        // Show error + retry button
+        return (
+          <Container>
+            <Text
+                text={error}
+                x={width / 2}
+                y={height / 2 - 30}
+                anchor={0.5}
+                style={{
+                fill: 0xff5555,
+                fontSize: 24,
+                fontWeight: "bold",
+                fontFamily: "Arial",
+                align: "center",
+                }}
+            />
+            <RectButton
+                x={width / 2 - 100}
+                y={height / 2 + 10}
+                width={500}
+                height={100}
+                color={green}
+                alpha={0.8}
+                text="Retry"
+                fontSize={18}
+                fontColor={0xffffff}
+                fontWeight="bold"
+                callback={retryInitialization}
+            />
+            <RectButton
+                x={width / 2 - 100}
+                y={height / 2 + 75}
+                width={500}
+                height={100}
+                color={black}
+                alpha={0.8}
+                text="Back"
+                fontSize={18}
+                fontColor={white}
+                fontWeight="bold"
+                callback={conjectureCallback}
+            />
+          </Container>
+        );
+    } else if (!cameraStatus === "initialized") {
+        // Show initializing / loading message
+        return (
+          <Container>
+              <PixiLoader width={width} height={height} />
+              <Text
+                text="Trying to initialize devices..."
+                x={width / 2}
+                y={height / 2 + 100}
+                anchor={0.5}
+                style={{
+                fill: 0xffffff,
+                fontSize: 24,
+                fontWeight: "bold",
+                fontFamily: "Arial",
+                align: "center",
+                }}
+              />
+          </Container>
+        );
+    }
 
     return (
       <>
