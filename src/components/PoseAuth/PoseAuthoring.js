@@ -8,11 +8,9 @@ import { useMachine } from "@xstate/react";
 import { PoseAuthMachine } from "../../machines/poseauthMachine";
 import { capturePose, resetConjecture } from "./ButtonFunctions";
 import { calculateFaceDepth } from "../Pose/landmark_utilities";
-import { Text, Container } from "@inlet/react-pixi";
+import { Text, Graphics, Container } from '@inlet/react-pixi';
 import usePoseData from "../utilities/PoseData";
 import { useRef } from "react";
-
-
 
 // Defining a NotificationBox component using Pixi components, used for all notification pop-ups
 const NotificationBox = ({ message, textSize }) => {
