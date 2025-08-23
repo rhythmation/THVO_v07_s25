@@ -81,10 +81,10 @@ export default function LevelPlay(props) {
 
     if (state.value === 'intuition') {
       setExpText(`Read aloud:\n\n${desc}\n\nSay aloud if it is TRUE or FALSE?`);
-      writeToDatabaseIntuitionStart(gameID);
+      writeToDatabaseIntuitionStart(gameID).catch(console.error);
     } else if (state.value === 'insight') {
       setExpText(`Now explain WHY you think:\n\n${desc}\n\n is TRUE or FALSE?`);
-      writeToDatabaseIntuitionEnd(gameID);
+      writeToDatabaseIntuitionEnd(gameID).catch(console.error);
     } else {
       setExpText('');
     }

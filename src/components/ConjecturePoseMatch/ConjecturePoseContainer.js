@@ -55,10 +55,10 @@ const ConjecturePoseContainer = (props) => {
             
             // Start auto-flush with hybrid strategy - now passes UUID
             autoFlushId = startSmartAutoFlush(gameID, UUID, {
-              maxBufferSize: 50,      // Flush when buffer hits 50 frames
-              flushIntervalMs: 2000,  // Or every 2 seconds
-              minBufferSize: 5,       // Don't flush tiny batches
-              frameRate: frameRate    // Pass frameRate for promise checker
+              maxBufferSize: 100,      
+              flushIntervalMs: 7500,  
+              minBufferSize: 10,       
+              frameRate: frameRate    
             });
           };
 
