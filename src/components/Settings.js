@@ -3,28 +3,41 @@ import { Container, Graphics, Text } from "@inlet/react-pixi";
 import RectButton from "./RectButton";
 import SettingRow from "./SettingRow";
 
-const sectionHeaderStyle = {
+// Typography
+const TITLE_STYLE = {
   fontFamily: "Arial",
-  fontSize:   12,
-  fontWeight: "bold",
-  fill:       "black",
+  fontSize: 26,
+  fontWeight: "900",
+  fill: 0x1e3a8a, // blue-900
+  letterSpacing: 1.5,
 };
-
-const labelTextStyle = {
+const SECTION_STYLE = {
   fontFamily: "Arial",
-  fontSize:   16,
-  fill:       "black",
+  fontSize: 13,
+  fontWeight: "800",
+  fill: 0x6b7280, // gray-500
+  letterSpacing: 1.2,
 };
-
+const LABEL_STYLE = {
+  fontFamily: "Arial",
+  fontSize: 16,
+  fill: 0x111827, // gray-900
+};
 
 const Settings = ({ width, height, x, y, onClose }) => {
-  // inside Settings, before your return:
-const leftColX    = 20;
-const rightColX   = width / 2 + 20;
-const firstRowY   = 60;      // starting y-offset for the first toggle
-const rowSpacing  = 35;      // vertical space between each row
+  // Layout constants
+  const MARGIN = 20;           // outer card margin
+  const PAD = 20;              // inner content padding
+  const COL_GAP = 56;          // space between columns
+  const COL_W = (width - MARGIN * 2 - COL_GAP - PAD * 2) / 2;
 
-  // State to manage all settings
+  const leftColX = MARGIN + PAD;
+  const rightColX = leftColX + COL_W + COL_GAP;
+
+  const firstRowY = 96;        // first toggle row y
+  const rowSpacing = 40;       // vertical spacing between rows
+
+  // State
   const [settings, setSettings] = useState({
     sound: true,
     music: true,
@@ -33,7 +46,7 @@ const rowSpacing  = 35;      // vertical space between each row
     tween: true,
     calibration: true,
     Hints: true,
-    NumberOfhints:4,
+    NumberOfhints: 4,
     language: "English",
     fps: 30,
     audioRecording: true,
@@ -46,288 +59,289 @@ const rowSpacing  = 35;      // vertical space between each row
     pip: false,
   });
 
-  // Toggle settings between ON and OFF
-  const toggleSetting = (key) => {
+  const toggleSetting = (key) =>
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
-  // Update the number of hints (increment or decrement)
-  const updateNumberOfhints= (increment) => {
+  const updateNumberOfhints = (increment) =>
     setSettings((prev) => ({
       ...prev,
       NumberOfhints: Math.max(0, prev.NumberOfhints + increment),
     }));
-  };
 
-  // Change language between English and Spanish
-  const updateLanguage = () => {
+  const updateLanguage = () =>
     setSettings((prev) => ({
       ...prev,
       language: prev.language === "English" ? "Spanish" : "English",
     }));
-  };
 
-  // Draw the background for the settings menu
+  // Background & card
   const drawBackground = useCallback(
     (g) => {
       g.clear();
-      g.beginFill(0xffffe0); // Light yellow background
+
+      // soft background
+      g.beginFill(0xf9fafb); // gray-50
       g.drawRect(0, 0, width, height);
       g.endFill();
-      // Card metrics
-      const margin      = 20;
-      const cardWidth   = width  - margin * 2;
-      const cardHeight  = height - margin * 2;      
-      const radius      = 12;
 
-      g.beginFill(0x000000, 0.15);
-      g.drawRoundedRect(
-        margin + 4,       // x offset
-        margin + 4,       // y offset
-        cardWidth,        // same size
-        cardHeight,
-        radius
-      );
-     g.endFill();
+      // drop shadow
+      const cardWidth = width - MARGIN * 2;
+      const cardHeight = height - MARGIN * 2;
+      const radius = 14;
 
-      // 2) draw the ivory card on top
-      g.beginFill(0xfffffa);
-      g.drawRoundedRect(margin, margin, cardWidth, cardHeight, radius);
+      g.beginFill(0x000000, 0.08);
+      g.drawRoundedRect(MARGIN + 4, MARGIN + 6, cardWidth, cardHeight, radius);
       g.endFill();
 
+      // foreground card
+      g.beginFill(0xffffff);
+      g.drawRoundedRect(MARGIN, MARGIN, cardWidth, cardHeight, radius);
+      g.endFill();
+
+      // top divider line (under title)
+      g.lineStyle(1, 0xe5e7eb, 1);
+      g.moveTo(MARGIN + PAD, 72);
+      g.lineTo(width - MARGIN - PAD, 72);
+      g.lineStyle(0);
     },
     [width, height]
   );
 
   return (
     <Container position={[x, y]} zIndex={100}>
-      {/* Background */}
       <Graphics draw={drawBackground} />
 
       {/* Title */}
       <Text
-        text={"SETTINGS"}
-        style={{
-          fontFamily: "Arial",
-          fontSize: 24,
-          fontWeight: "bold",
-          fill: "blue",
-        }}
+        text="SETTINGS"
+        style={TITLE_STYLE}
         x={width / 2}
-        y={40}
+        y={36}
         anchor={0.5}
       />
 
-      {/* Left Column Settings */}
-       <Text
-   text="Audio"
-   style={sectionHeaderStyle}
-   x={leftColX}
-   y={firstRowY - 20}
- />
- <SettingRow
-   label="Sound:"
-   value={settings.sound}
-   x={leftColX}
-   y={firstRowY + rowSpacing * 0}
-   onToggle={() => toggleSetting("sound")}
- />
-
-<SettingRow
-  label="Music:"
-  value={settings.music}
-  x={leftColX}
-  y={firstRowY + rowSpacing * 1}
-  onToggle={() => toggleSetting("music")}
-/>
-
-      {/* Narrative  part  */}
-      <Text text={"Narrative"} style={{ fontSize: 12, fill: "black" }} x={20} y={120} />
+      {/* LEFT COLUMN */}
+      {/* Audio */}
+      <Text text="AUDIO" style={SECTION_STYLE} x={leftColX} y={firstRowY - 24} />
       <SettingRow
-  label="Story:"
-  value={settings.story}
-  x={20}
-  y={130}
-  onToggle={() => toggleSetting("story")}
-/>
-      {/* Motion part  */}
-      <Text text={"Motion"} style={{ fontSize: 12, fill: "black" }} x={20} y={160} />
-
+        label="Sound:"
+        value={settings.sound}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 0}
+        onToggle={() => toggleSetting("sound")}
+      />
       <SettingRow
-  label="M-Clips:"
-  value={settings.mclips}
-  x={20}
-  y={170}
-  onToggle={() => toggleSetting("mclips")}
-/>
+        label="Music:"
+        value={settings.music}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 1}
+        onToggle={() => toggleSetting("music")}
+      />
 
-     
-      <SettingRow
-  label="Tween:"
-  value={settings.tween}
-  x={20}
-  y={200}
-  onToggle={() => toggleSetting("tween")}
-/>
-
-          {/* Scaffolds part  */}
-      <Text text={"Scaffolds"} style={{ fontSize: 12, fill: "black" }} x={20} y={230} /> 
-
-      <SettingRow
-  label="Calibration:"
-  value={settings.calibration}
-  x={20}
-  y={240}
-  onToggle={() => toggleSetting("calibration")}
-/>
-
-
-     <SettingRow
-  label="Hints:"
-  value={settings.Hints}
-  x={20}
-  y={260}
-  onToggle={() => toggleSetting("Hints")}
-/>
-
-      
-
-      <Text text={"No of Hints:"} style={{ fontSize: 20, fill: "black" }} x={20} y={280} />
+      {/* Narrative */}
       <Text
-        text={`${settings.NumberOfhints}`}
-        style={{ fontSize: 16, fill: "black" }}
-        x={width / 3 - 20}
-        y={300}
+        text="NARRATIVE"
+        style={SECTION_STYLE}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 2 - 24}
       />
-      <RectButton
-        width={30}
-        height={30}
-        x={width / 3 - 70}
-        y={300}
-        text={"-"}
-        color={"red"}
-        fontColor={"white"}
-        callback={() => updateNumberOfhints(-1)}
-      />
-      <RectButton
-        width={30}
-        height={30}
-        x={width / 3 + 10}
-        y={300}
-        text={"+"}
-        color={"green"}
-        fontColor={"white"}
-        callback={() => updateNumberOfhints(1)}
+      <SettingRow
+        label="Story:"
+        value={settings.story}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 2}
+        onToggle={() => toggleSetting("story")}
       />
 
-      <Text text={"Language"} style={{ fontSize: 20, fill: "black" }} x={20} y={340} />
+      {/* Motion */}
+      <Text
+        text="MOTION"
+        style={SECTION_STYLE}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 3 - 24}
+      />
+      <SettingRow
+        label="M-Clips:"
+        value={settings.mclips}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 3}
+        onToggle={() => toggleSetting("mclips")}
+      />
+      <SettingRow
+        label="Tween:"
+        value={settings.tween}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 4}
+        onToggle={() => toggleSetting("tween")}
+      />
+
+      {/* Scaffolds */}
+      <Text
+        text="SCAFFOLDS"
+        style={SECTION_STYLE}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 5 - 24}
+      />
+      <SettingRow
+        label="Calibration:"
+        value={settings.calibration}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 5}
+        onToggle={() => toggleSetting("calibration")}
+      />
+      <SettingRow
+        label="Hints:"
+        value={settings.Hints}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 6}
+        onToggle={() => toggleSetting("Hints")}
+      />
+
+      {/* Number of Hints (inline, cleaner) */}
+      <Container position={[leftColX, firstRowY + rowSpacing * 7 - 2]}>
+        <Text text="No. of Hints:" style={LABEL_STYLE} />
+        <RectButton
+          width={30}
+          height={28}
+          x={160}
+          y={-4}
+          text="-"
+          color="#ef4444"
+          fontColor="white"
+          callback={() => updateNumberOfhints(-1)}
+        />
+        <Text
+          text={`${settings.NumberOfhints}`}
+          style={{ fontFamily: "Arial", fontSize: 16, fill: 0x111827 }}
+          x={200}
+          y={0}
+        />
+        <RectButton
+          width={30}
+          height={28}
+          x={240}
+          y={-4}
+          text="+"
+          color="#22c55e"
+          fontColor="white"
+          callback={() => updateNumberOfhints(1)}
+        />
+      </Container>
+
+      {/* Language */}
+      <Text
+        text="LANGUAGE"
+        style={SECTION_STYLE}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 8 - 24}
+      />
       <RectButton
-        width={110}
-        height={40}
-        x={width / 3 - 50}
-        y={340}
+        width={128}
+        height={36}
+        x={leftColX}
+        y={firstRowY + rowSpacing * 8 - 4}
         text={settings.language}
-        color={"blue"}
-        fontColor={"white"}
+        color="#2563eb"
+        fontColor="white"
         callback={updateLanguage}
       />
 
-      {/* Right Column Settings */}
-      
-     {/* Data part  */}
-      
-      <Text text={"Data"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={50} />
-      <SettingRow
-  label="Audio Recording:"
-  value={settings.audioRecording}
-  x={rightColX}
-  y={firstRowY + rowSpacing * 0}
-  onToggle={() => toggleSetting("audioRecording")}
-/>
-
-     <SettingRow
-  label="Video Recording:"
-  value={settings.videoRecording}
-  x={rightColX}
-  y={firstRowY + rowSpacing * 1}
-  onToggle={() => toggleSetting("videoRecording")}
-/>
-
-
+      {/* RIGHT COLUMN */}
+      {/* Data */}
       <Text
-  text="FPS:"
-  style={labelTextStyle}
-  x={rightColX}
-  y={firstRowY + rowSpacing * 2 + 4}      // +4 to vertically center compared to your 16px font
-/>
-<Text
-  text={`${settings.fps}`}
-  style={labelTextStyle}
-  x={rightColX + 120}                     // 120px to the right of the label
-  y={firstRowY + rowSpacing * 2 + 4}
-/>
-
-       {/* Mode part  */}
-      <Text text={"Mode"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={140} />
+        text="DATA"
+        style={SECTION_STYLE}
+        x={rightColX}
+        y={firstRowY - 24}
+      />
       <SettingRow
-  label="Research:"
-  value={settings.research}
-  x={width/2 + 20}
-  y={150}
-  onToggle={() => toggleSetting("research")}
-/>
-
-
+        label="Audio Recording:"
+        value={settings.audioRecording}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 0}
+        onToggle={() => toggleSetting("audioRecording")}
+      />
       <SettingRow
-  label="Teaching:"
-  value={settings.teaching}
-  x={width/2 + 20}
-  y={170}
-  onToggle={() => toggleSetting("teaching")}
-/>
+        label="Video Recording:"
+        value={settings.videoRecording}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 1}
+        onToggle={() => toggleSetting("videoRecording")}
+      />
+      {/* FPS (label + value) */}
+      <Container position={[rightColX, firstRowY + rowSpacing * 2]}>
+        <Text text="FPS:" style={LABEL_STYLE} y={0} />
+        <Text
+          text={`${settings.fps}`}
+          style={LABEL_STYLE}
+          x={120}
+          y={0}
+        />
+      </Container>
 
-
-       {/* access part  */}
-       <Text text={"access"} style={{ fontSize: 12, fill: "black" }} x={width / 2 + 20} y={220} />
-
-       <SettingRow
-  label="Closed-Captions:"
-  value={settings.closedCaptions}
-  x={width/2 + 20}
-  y={230}
-  onToggle={() => toggleSetting("closedCaptions")}
-/>
-
-
+      {/* Mode */}
+      <Text
+        text="MODE"
+        style={SECTION_STYLE}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 3 - 24}
+      />
       <SettingRow
-  label="Visual Assist:"
-  value={settings.visualAssist}
-  x={width/2 + 20}
-  y={250}
-  onToggle={() => toggleSetting("visualAssist")}
-/>
-
-
+        label="Research:"
+        value={settings.research}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 3}
+        onToggle={() => toggleSetting("research")}
+      />
       <SettingRow
-  label="Text to Speech:"
-  value={settings.textToSpeech}
-  x={width/2 + 20}
-  y={270}
-  onToggle={() => toggleSetting("textToSpeech")}
-/>
+        label="Teaching:"
+        value={settings.teaching}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 4}
+        onToggle={() => toggleSetting("teaching")}
+      />
 
+      {/* Accessibility */}
+      <Text
+        text="ACCESSIBILITY"
+        style={SECTION_STYLE}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 5 - 24}
+      />
+      <SettingRow
+        label="Closed Captions:"
+        value={settings.closedCaptions}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 5}
+        onToggle={() => toggleSetting("closedCaptions")}
+      />
+      <SettingRow
+        label="Visual Assist:"
+        value={settings.visualAssist}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 6}
+        onToggle={() => toggleSetting("visualAssist")}
+      />
+      <SettingRow
+        label="Text to Speech:"
+        value={settings.textToSpeech}
+        x={rightColX}
+        y={firstRowY + rowSpacing * 7}
+        onToggle={() => toggleSetting("textToSpeech")}
+      />
+
+      {/* Close */}
       <RectButton
-        width={160}
+        width={180}
         height={48}
-        x={width / 2 - 80}
-        y={height - 60}
+        x={width / 2 - 90}
+        y={height - MARGIN - 56}
         text="CLOSE"
-        color="red"          
+        color="red"
         fontColor="white"
         fontWeight="bold"
         callback={onClose}
       />
-
     </Container>
   );
 };

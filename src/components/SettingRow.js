@@ -7,8 +7,8 @@ export default function SettingRow({
   x,
   y,
   onToggle,
-  buttonX   = 260,   // ⬅️ more space between label & toggle
-  buttonW   = 96,    // ⬅️ slightly wider pill
+  buttonX = 260, // space between label & toggle
+  buttonW = 96,  // wider pill
 }) {
   return (
     <Container position={[x, y]}>
@@ -16,18 +16,19 @@ export default function SettingRow({
         text={label}
         style={{
           fontFamily: "Arial",
-          fontWeight: "bold",
-          fill: 0x333333,
-          letterSpacing: 1.2,   // ⬅️ nicer tracking
+          fontSize: 16,
+          fontWeight: "600",
+          fill: 0x1f2937,      // slate-800
+          letterSpacing: 0.5,
         }}
       />
       <RectButton
         width={buttonW}
         height={32}
         x={buttonX}
-        y={2}
+        y={-2}                // slight visual centering
         text={value ? "ON" : "OFF"}
-        color={value ? "green" : "red"}
+        color={value ? "#2563eb" : "#9ca3af"} // blue ON, neutral OFF (accessible)
         fontColor="white"
         callback={onToggle}
       />
