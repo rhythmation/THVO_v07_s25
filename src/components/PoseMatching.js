@@ -95,7 +95,7 @@ const PoseMatching = (props) => {
   // Handle pose matching logic
   const handlePoseMatch = useCallback(() => {
     if (gameID) {
-      writeToDatabasePoseMatch(`Pose ${Math.floor((currentPoseIndex) / 3) + 1}-${(currentPoseIndex) % 3 + 1}`, gameID);
+      writeToDatabasePoseMatch(`Pose ${Math.floor((currentPoseIndex) / 3) + 1}-${(currentPoseIndex) % 3 + 1}`, gameID).catch(console.error);
     }
     
     setIsTransitioning(true);

@@ -1105,7 +1105,7 @@ export const writeToDatabasePoseMatch = async (poseNumber, gameId) => {
   ];
 
   // Return the promise that push() returns
-  return promises;
+  await Promise.all(promises);
 };
 
 // Write in the start of the truefalse phase
