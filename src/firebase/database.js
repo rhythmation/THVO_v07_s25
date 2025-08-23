@@ -101,41 +101,158 @@ export const curricularTextBoxes = [
   "CurricularPIN",
 ]
 
-// Export a function named writeToDatabase, allows constant pose data upload
-export const writeToDatabase = async (poseData, UUID, frameRate, gameId) => {
-  // Create a new date object to get a timestamp
+// Frame buffer to store poses before batch writing
+let frameBuffer = [];
+let sessionInitialized = false;
+let flushPromises = []; // Track batch write promises for promise checking
+
+// Initialize session with static data (call once per session)
+export const initializeSession = async (gameId, frameRate, UUID) => {
+  if (sessionInitialized) return; // Prevent duplicate initialization
+  
   const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
-
-  let promise;
-
-  // only runs if event type is established
-  if(eventType !== null){
-    // UPDATED: include device layer + separate loginTime dir
-    const dbRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/${eventType}`);
-
-    // Create an object to send to the database
-    // This object includes the userId, poseData, conjectureId, frameRate, and timestamp and
-    const dataToSend = {
+  
+  if (eventType !== null) {
+    const sessionRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}`);
+    
+    // All static data
+    const sessionData = {
       userId,
       userName,
-      deviceId,          // NEW
-      deviceNickname,    // NEW
-      poseData: JSON.stringify(poseData),
+      deviceId,
+      deviceNickname,
       eventType,
-      timestamp,
-      timestampGMT,
       frameRate,
       loginTime,
-      UUID,
+      sessionStartTime: timestampGMT,
     };
-
-    // Push the data to the database using the dbRef reference (pushes using default firebase reference codes)
-    promise = push(dbRef, dataToSend);
+    
+    // Store session metadata once
+    await set(sessionRef, sessionData);
+    sessionInitialized = true;
+    console.log('Session initialized with static data');
   }
-  // Return the promise that push() returns
-  return promise;
+};
+
+// Buffer frame data (called every frame)
+export const bufferPoseData = (poseData) => {
+  if (eventType === null) return;
+  
+  const frameData = {
+    pose: JSON.stringify(poseData),
+    timestamp: new Date().toUTCString(),
+  };
+  
+  frameBuffer.push(frameData);
+};
+
+// Batch write all buffered frames (call periodically)
+export const flushFrameBuffer = async (gameId, UUID, frameRate = 12) => {
+  if (frameBuffer.length === 0 || eventType === null) return;
+  
+  // Ensure session is initialized before writing frames
+  if (!sessionInitialized) {
+    console.warn('Session not initialized. Call initializeSession() first.');
+    return;
+  }
+  
+  try {
+    const framesRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/frames`);
+    
+    // Create batch update object
+    const updates = {};
+    
+    // Use padded timestamp to ensure chronological ordering in Firebase
+    const batchTimestamp = Date.now();
+    const paddedBatchId = batchTimestamp.toString().padStart(15, '0'); // Pad to 15 digits for proper sorting
+    
+    frameBuffer.forEach((frame, index) => {
+      // Create keys that will sort chronologically: batch_000001692123456789_frame_00001
+      const paddedIndex = index.toString().padStart(5, '0');
+      updates[`batch_${paddedBatchId}_frame_${paddedIndex}`] = frame;
+    });
+    
+    // Write all frames at once and track the promise
+    const flushPromise = update(framesRef, updates);
+    flushPromises.push(flushPromise);
+    
+    // Run promise checker to detect data loss
+    promiseChecker(frameRate, flushPromises);
+    
+    await flushPromise;
+    
+    console.log(`Flushed ${frameBuffer.length} frames to database`);
+    
+    // Clear the buffer
+    frameBuffer = [];
+    
+    return true;
+  } catch (error) {
+    console.error('Error flushing frame buffer:', error);
+    return false;
+  }
+};
+
+// Get current buffer size (useful for monitoring)
+export const getBufferSize = () => frameBuffer.length;
+
+// Force flush and reset session (call on session end)
+export const endSession = async (gameId, UUID, frameRate = 12) => {
+  // Flush any remaining frames
+  await flushFrameBuffer(gameId, UUID, frameRate);
+  
+  // Wait for all pending flush promises to settle (like original implementation)
+  await Promise.allSettled(flushPromises);
+  
+  // Reset session state
+  sessionInitialized = false;
+  frameBuffer = [];
+  flushPromises = []; // Clear promise tracking
+  
+  console.log('Session ended and cleaned up');
+};
+
+// Hybrid flush strategy
+let MAX_BUFFER_SIZE = 50; // Make it mutable so it can be updated by options
+
+export const bufferPoseDataWithAutoFlush = (poseData, gameId, UUID, frameRate = 12) => {
+  if (eventType === null) return;
+  
+  // Add to buffer
+  bufferPoseData(poseData);
+  
+  // Immediate flush if buffer is getting too big (uses MAX_BUFFER_SIZE)
+  if (frameBuffer.length >= MAX_BUFFER_SIZE) {
+    console.log('Buffer size limit reached, flushing immediately');
+    flushFrameBuffer(gameId, UUID, frameRate);
+  }
+};
+
+// Start hybrid auto-flush (time-based + size-based)
+export const startSmartAutoFlush = (gameId, UUID, options = {}) => {
+  const { 
+    maxBufferSize = 100,     // This sets MAX_BUFFER_SIZE for immediate flushes
+    flushIntervalMs = 8000,
+    minBufferSize = 5,      // Don't flush tiny batches too often
+    frameRate = 12          // Pass frameRate for promise checker
+  } = options;
+  
+  // Update the global MAX_BUFFER_SIZE based on options
+  MAX_BUFFER_SIZE = maxBufferSize;
+  
+  return setInterval(async () => {
+    if (frameBuffer.length >= minBufferSize) {
+      console.log(`Auto-flushing ${frameBuffer.length} frames`);
+      await flushFrameBuffer(gameId, UUID, frameRate);
+    }
+  }, flushIntervalMs);
+};
+
+export const stopAutoFlush = (intervalId) => {
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
 };
 
 export const loadGameDialoguesFromFirebase = async (gameId) => {
