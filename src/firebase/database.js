@@ -105,7 +105,6 @@ export const curricularTextBoxes = [
 let frameBuffer = [];
 let sessionInitialized = false;
 let flushPromises = []; // Track batch write promises for promise checking
-let lastEventType = null; // Track last known event type for change detection
 
 // Initialize session with static data (call once per session)
 export const initializeSession = async (gameId, frameRate, UUID) => {
@@ -123,6 +122,7 @@ export const initializeSession = async (gameId, frameRate, UUID) => {
       userName,
       deviceId,
       deviceNickname,
+      eventType,
       frameRate,
       loginTime,
       sessionStartTime: timestampGMT,
@@ -131,20 +131,13 @@ export const initializeSession = async (gameId, frameRate, UUID) => {
     // Store session metadata once
     await set(sessionRef, sessionData);
     sessionInitialized = true;
-    lastEventType = null; // Start with null so first event gets detected
     console.log('Session initialized with static data');
   }
 };
 
 // Buffer frame data (called every frame)
-export const bufferPoseData = async (poseData, gameId, UUID, frameRate = 12) => {
+export const bufferPoseData = (poseData) => {
   if (eventType === null) return;
-  
-  // Check for event type change and flush if needed
-  if (eventType !== lastEventType && frameBuffer.length > 0) {
-    console.log(`Event type changed from ${lastEventType} to ${eventType}, flushing buffer`);
-    await flushFrameBuffer(gameId, UUID, frameRate);
-  }
   
   const frameData = {
     pose: JSON.stringify(poseData),
@@ -165,7 +158,7 @@ export const flushFrameBuffer = async (gameId, UUID, frameRate = 12) => {
   }
   
   try {
-    const framesRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/frames/${eventType}`);
+    const framesRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/frames`);
     
     // Create batch update object
     const updates = {};
@@ -191,25 +184,14 @@ export const flushFrameBuffer = async (gameId, UUID, frameRate = 12) => {
     
     console.log(`Flushed ${frameBuffer.length} frames to database`);
     
-    // Clear the buffer and update last known event type
+    // Clear the buffer
     frameBuffer = [];
-    lastEventType = eventType;
     
     return true;
   } catch (error) {
     console.error('Error flushing frame buffer:', error);
     return false;
   }
-};
-
-// Check for event type change and flush if needed
-const checkEventTypeChange = async (gameId, UUID, frameRate = 12) => {
-  if (eventType !== lastEventType && frameBuffer.length > 0) {
-    console.log(`Event type changed from ${lastEventType} to ${eventType}, flushing buffer`);
-    await flushFrameBuffer(gameId, UUID, frameRate);
-    return true;
-  }
-  return false;
 };
 
 // Get current buffer size (useful for monitoring)
@@ -227,7 +209,6 @@ export const endSession = async (gameId, UUID, frameRate = 12) => {
   sessionInitialized = false;
   frameBuffer = [];
   flushPromises = []; // Clear promise tracking
-  lastEventType = null; // Reset event type tracking
   
   console.log('Session ended and cleaned up');
 };
@@ -235,11 +216,8 @@ export const endSession = async (gameId, UUID, frameRate = 12) => {
 // Hybrid flush strategy
 let MAX_BUFFER_SIZE = 50; // Make it mutable so it can be updated by options
 
-export const bufferPoseDataWithAutoFlush = async (poseData, gameId, UUID, frameRate = 12) => {
+export const bufferPoseDataWithAutoFlush = (poseData, gameId, UUID, frameRate = 12) => {
   if (eventType === null) return;
-  
-  // Check for event type change first and flush if needed
-  await checkEventTypeChange(gameId, UUID, frameRate);
   
   // Add to buffer
   bufferPoseData(poseData);
@@ -247,24 +225,11 @@ export const bufferPoseDataWithAutoFlush = async (poseData, gameId, UUID, frameR
   // Immediate flush if buffer is getting too big (uses MAX_BUFFER_SIZE)
   if (frameBuffer.length >= MAX_BUFFER_SIZE) {
     console.log('Buffer size limit reached, flushing immediately');
-    await flushFrameBuffer(gameId, UUID, frameRate);
+    flushFrameBuffer(gameId, UUID, frameRate);
   }
 };
 
-// Enhanced buffer function that checks for event changes
-export const bufferPoseDataWithEventCheck = async (poseData, gameId, UUID, frameRate = 12) => {
-  if (eventType === null) return;
-  
-  // Check for event type change and flush if needed
-  const flushedDueToEventChange = await checkEventTypeChange(gameId, UUID, frameRate);
-  
-  // Add to buffer after potential flush
-  bufferPoseData(poseData);
-  
-  return flushedDueToEventChange;
-};
-
-// Start hybrid auto-flush (time-based + size-based + event-change-based)
+// Start hybrid auto-flush (time-based + size-based)
 export const startSmartAutoFlush = (gameId, UUID, options = {}) => {
   const { 
     maxBufferSize = 100,     // This sets MAX_BUFFER_SIZE for immediate flushes
@@ -277,11 +242,7 @@ export const startSmartAutoFlush = (gameId, UUID, options = {}) => {
   MAX_BUFFER_SIZE = maxBufferSize;
   
   return setInterval(async () => {
-    // Check for event type change first
-    const flushedDueToEventChange = await checkEventTypeChange(gameId, UUID, frameRate);
-    
-    // Only do time-based flush if we didn't just flush due to event change
-    if (!flushedDueToEventChange && frameBuffer.length >= minBufferSize) {
+    if (frameBuffer.length >= minBufferSize) {
       console.log(`Auto-flushing ${frameBuffer.length} frames`);
       await flushFrameBuffer(gameId, UUID, frameRate);
     }
@@ -292,11 +253,6 @@ export const stopAutoFlush = (intervalId) => {
   if (intervalId) {
     clearInterval(intervalId);
   }
-};
-
-// Utility function to manually trigger event change check
-export const forceEventTypeCheck = async (gameId, UUID, frameRate = 12) => {
-  return await checkEventTypeChange(gameId, UUID, frameRate);
 };
 
 export const loadGameDialoguesFromFirebase = async (gameId) => {
@@ -1128,7 +1084,7 @@ export const writeToDatabaseIntuitionStart = async (gameId) => {
   ];
 
   // Return the promise that push() returns
-  await Promise.all(promises);
+  return promises;
 };
 
 // Write in the end of the truefalse phase. 
@@ -1151,7 +1107,7 @@ export const writeToDatabaseIntuitionEnd = async (gameId) => {
   ];
 
   // Return the promise that push() returns
-  await Promise.all(promises);
+  return promises;
 };
 
 // Write in the second part of the true false phase
@@ -1171,7 +1127,7 @@ export const writeToDatabaseInsightStart = async (gameId = undefined) => {
   ];
 
   // Return the promise that push() returns
-  await Promise.all(promises);
+  return promises;
 };
 
 // Write in the end of the second part of the true false phase
@@ -1191,7 +1147,7 @@ export const writeToDatabaseInsightEnd = async (gameId = undefined) => {
   ];
 
   // Return the promise that push() returns
-  await Promise.all(promises);
+  return promises;
 };
 
 // Search functionality that downloads a set of child nodes from a game based on inputted dates
