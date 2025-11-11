@@ -8,7 +8,7 @@ import InputBox from "../InputBox";
 import { Input } from 'postcss';
 import { useEffect, useRef, useState, } from 'react';
 import { getUserEmailFromDatabase,  } from "../../firebase/userDatabase"
-import { getFromDatabaseByGame, convertDateFormat, checkDateFormat, checkGameAuthorization, getAuthorizedGameList, } from "../../firebase/database"
+import { getFromDatabaseByGame, convertDateFormat, checkDateFormat, checkGameAuthorization, getAuthorizedGameList, findGameIdByName, getFromDatabaseByGameCSV} from "../../firebase/database"
 import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 
@@ -506,84 +506,68 @@ const DataMenu = (props) => {
         callback={onClose}
       />
 
-      <RectButton //Button for downloading the data
+      <RectButton
         height={menuHeight * 0.3}
-        width={menuWidth* 0.4}
-        x={x + innerRectMargins + innerRectWidth - menuWidth* 0.2 - fieldTextMarginsFromInnerRect}
+        width={menuWidth * 0.4}
+        x={x + innerRectMargins + innerRectWidth - menuWidth * 0.2 - fieldTextMarginsFromInnerRect}
         y={y + menuHeight - innerRectMargins - innerRectHeight + fieldTextMarginsFromInnerRect + fieldTextMarginsFromEachOther * 4}
-        color={(save_csv || save_json) ? royalBlue : lightGray}
+        color={(save_csv || save_json || save_videos) ? royalBlue : lightGray}
         text={"SAVE"}
         fontSize={menuWidth * 0.02}
         fontColor={white}
         fontWeight={600}
         callback={() => {
-          // getFromDatabaseByGame('sittingquicktest', '2024-11-11', '2024-12-11'); //game, start date, end date
-          if (all_data && save_json){
-            getFromDatabaseByGame(game_name, '2000-01-01', new Date().toISOString().split('T')[0]); //game, start date, end date
-          }
-          else if (save_json) {
-            getFromDatabaseByGame(game_name, convertDateFormat(start_date), convertDateFormat(end_date)); //game, start date, end date
-          }
-          if (all_data && save_csv){
-            getFromDatabaseByGameCSV(game_name, '2000-01-01', new Date().toISOString().split('T')[0]); //game, start date, end date
-          }
-          else if (save_csv) {
-            getFromDatabaseByGameCSV(game_name, convertDateFormat(start_date), convertDateFormat(end_date)); //game, start date, end date
-          }
-          
-          if (all_data && save_videos) {
-            if (!game_name) {
-              alert('Please enter a game name.');
-              return;
-            }
-          
-            if (!all_data && (!start_date || !end_date)) {
-              alert('Please enter a start and end date.');
-              return;
-            }
-          
-            // parse to Date object directly here
-            const parseDate = (dateStr) => {
-              if (!dateStr) return null;
-              const [month, day, year] = dateStr.split('/');
-              return new Date(Date.UTC(+year, +month - 1, +day));
-            };
-          
-            const start = all_data ? new Date(Date.UTC(2000, 0, 1)) : parseDate(start_date);
-            const end = all_data ? new Date() : parseDate(end_date);
-          
-            console.log("Sending to downloadVideos -> start:", start.toISOString(), "end:", end.toISOString());
-          
-            downloadVideos(game_name, start, end);
+          if (!game_name) {
+            alert('Please enter a game name.');
+            return;
           }
 
-          if (save_videos) {
-            if (!game_name) {
-              alert('Please enter a game name.');
+          if (!all_data && (!start_date || !end_date)) {
+            alert('Please enter a start and end date.');
+            return;
+          }
+
+          findGameIdByName(game_name).then((gameId) => {
+            if (!gameId) {
+              alert(`Game ID not found for "${game_name}".`);
               return;
             }
-          
-            if (!all_data && (!start_date || !end_date)) {
-              alert('Please enter a start and end date.');
-              return;
+
+            // Handle JSON downloads
+            if (save_json) {
+              if (all_data) {
+                getFromDatabaseByGame(game_name, gameId, '2000-01-01', new Date().toISOString().split('T')[0]);
+              } else {
+                getFromDatabaseByGame(game_name, gameId, convertDateFormat(start_date), convertDateFormat(end_date));
+              }
             }
-          
-            // parse to Date object directly here
-            const parseDate = (dateStr) => {
-              if (!dateStr) return null;
-              const [month, day, year] = dateStr.split('/');
-              return new Date(Date.UTC(+year, +month - 1, +day));
-            };
-          
-            const start = all_data ? new Date() : parseDate(start_date);
-            const end = all_data ? new Date() : parseDate(end_date);
-          
-            console.log("Sending to downloadVideos -> start:", start.toISOString(), "end:", end.toISOString());
-          
-            downloadVideos(game_name, start, end);
-          }                  
+
+            // Handle CSV downloads
+            if (save_csv) {
+              if (all_data) {
+                getFromDatabaseByGameCSV(game_name, gameId, '2000-01-01', new Date().toISOString().split('T')[0]);
+              } else {
+                getFromDatabaseByGameCSV(game_name, gameId, convertDateFormat(start_date), convertDateFormat(end_date));
+              }
+            }
+
+            // Handle video downloads
+            if (save_videos) {
+              const parseDate = (dateStr) => {
+                if (!dateStr) return null;
+                const [month, day, year] = dateStr.split('/');
+                return new Date(Date.UTC(+year, +month - 1, +day));
+              };
+
+              const start = all_data ? new Date(Date.UTC(2000, 0, 1)) : parseDate(start_date);
+              const end = all_data ? new Date() : parseDate(end_date);
+
+              downloadVideos(game_name, start, end);
+            }
+          });
         }}
       />
+
     </Container>
     )
 } else {

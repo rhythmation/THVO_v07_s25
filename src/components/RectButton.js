@@ -14,6 +14,7 @@ const RectButton = (props) => {
     fontColor,
     fontWeight,
     callback,
+    alpha = 1
   } = props;
 
   const buttonWidth = width * 0.4; // Adjust the width scaling if needed
@@ -30,7 +31,7 @@ const RectButton = (props) => {
   );
 
   return (
-    <Container>
+    <Container alpha={alpha}>
       <Graphics 
         draw={draw} 
         interactive={true} 

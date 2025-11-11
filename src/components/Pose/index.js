@@ -8,14 +8,10 @@ import {
 import { blue, yellow, pink } from "../../utils/colors";
 import { LANDMARK_GROUPINGS } from "./landmark_utilities";
 import { landmarkToCoordinates, objMap } from "./pose_drawing_utilities";
-import { scale } from "chroma-js";
+import chroma from "chroma-js";
 
-const matchedFill = scale([yellow.toString(16), pink.toString(16)]).domain([
-  0, 100,
-]);
-const matchedStroke = scale([blue.toString(16), pink.toString(16)]).domain([
-  0, 100,
-]);
+const matchedFill = chroma.scale(["#ff0000", "#ffff00", "#00ff00"]).domain([0, 50, 100]);
+const matchedStroke = chroma.scale(["#800000", "#808000", "#008000"]).domain([0, 50, 100]);
 
 // ****************************************************************
 // Utility functions
@@ -428,7 +424,9 @@ const Pose = forwardRef((props, ref) => {
         drawFace(props.poseData, g, width, height, similarityScores);
       }
       if (props.poseData.poseLandmarks) {
-        setArmWidth(calculateArmWidth(props.poseData, width, height));
+        if (!props.skipArmWidthCalculation) {
+          setArmWidth(calculateArmWidth(props.poseData, width, height));
+        }
         // NOTE: Order of drawing body section matters, do not reorder
         drawTorso(props.poseData, g, width, height, similarityScores);
         drawAbdomen(props.poseData, g, width, height);

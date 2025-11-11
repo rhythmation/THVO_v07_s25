@@ -4,7 +4,6 @@ import Background from "../Background";
 import { blue, white, red, green, indigo, hotPink, purple,} from "../../utils/colors";
 import Button from "../Button"
 import RectButton from "../RectButton";
-import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID } from "../../firebase/database";
 import { useMachine } from "@xstate/react";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
 import { StoryEditorContentEditor } from "./StoryEditorModuleBoxes";
@@ -12,89 +11,96 @@ import Settings from '../Settings'; // Import the Settings component
 import { idToSprite } from "../Chapter"; //Import list of sprites
 import { saveGameDialoguesToFirebase, loadGameDialoguesFromFirebase } from "../../firebase/database";
 import { useEffect } from "react";import { saveNarrativeDraftToFirebase } from "../../firebase/database";
-
-// stores a list of conjectures
-export const Curriculum = {
-  CurrentConjectures: [],
-  CurrentUUID: null, // null if using new game. Same UUID from database if editing existing game.
-
-  addConjecture(conjecture) { // add the entire conjecture object to a list
-    this.CurrentConjectures.push(conjecture);
-  },
-
-  getCurrentConjectures() { // return the game (list of conjectures)
-    return this.CurrentConjectures;
-  },
-
-  getConjecturebyIndex(index) { // return a specific conjecture
-    return this.CurrentConjectures[index];
-  },
-
-  getCurrentUUID(){ //return the UUID if editing an existing game
-    if(this.CurrentUUID != null && this.CurrentUUID != ""){
-      return this.CurrentUUID;
-    }
-    else{
-      return null;
-    }
-  },
-
-  setCurrentUUID(newUUID){
-    this.CurrentUUID = newUUID;
-  },
-
-  moveConjectureUpByIndex(index){ // swaps 2 elements so the index rises up the list
-    if(index > 0) {
-      const temp = this.CurrentConjectures[index - 1];
-      this.CurrentConjectures[index - 1] = this.CurrentConjectures[index];
-      this.CurrentConjectures[index] = temp;
-    }
-  },
-
-  moveConjectureDownByIndex(index){ // swaps 2 elements so the index falls down the list
-    if(index < this.CurrentConjectures.length - 1){
-      const temp = this.CurrentConjectures[index + 1];
-      this.CurrentConjectures[index + 1] = this.CurrentConjectures[index];
-      this.CurrentConjectures[index] = temp;
-    }
-  },
-
-  removeConjectureByIndex(index){ // remove a particular conjecture based on its index in the list
-    this.CurrentConjectures.splice(index, 1);;
-  },
-
-  async setCurricularEditor(curricular){ // fill in curriculum data
-    this.CurrentConjectures = []; // remove previous list of levels
-    if(curricular["ConjectureUUIDs"]){ // only fill in existing values
-      for(i=0; i < curricular["ConjectureUUIDs"].length; i++){
-        conjectureList = await getConjectureDataByUUID(curricular["ConjectureUUIDs"][i]); //getConjectureDataByUUID returns a list
-        conjecture = conjectureList[curricular["ConjectureUUIDs"][i]]; // get the specific conjecture from that list
-        this.CurrentConjectures.push(conjecture);
-      }
-    }
-      localStorage.setItem('CurricularName', curricular["CurricularName"]);
-      localStorage.setItem('CurricularAuthor', curricular["CurricularAuthor"]);
-      localStorage.setItem('CurricularKeywords', curricular["CurricularKeywords"]);
-      if(curricular["CurricularPIN"] != "undefined" && curricular["CurricularPIN"] != null){
-        localStorage.setItem('CurricularPIN', curricular["CurricularPIN"]);
-      }
-  },
-
-  clearCurriculum(){
-    this.CurrentConjectures = []; // remove previous list of levels
-    this.setCurrentUUID(null); // remove UUID
-  },
-};
+import { Curriculum } from '../CurricularModule/CurricularModule';
+import PixiLoader from '../utilities/PixiLoader';
 
 const StoryEditorModule = (props) => {
-  const { height, width, mainCallback, gameUUID, conjectureSelectCallback, conjectureCallback } = props;
+  const { height, width, mainCallback, gameUUID, curricularCallback, conjectureSelectCallback, conjectureCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Stores dialogues
   const [dialogues, setDialogues] = useState([]);
+            
+  // ----- Chapters -----
+  // Always keep chapters in sync with the current number of levels (conjectures)
+  const [chapters, setChapters] = useState(() => {
+    const initialCount = Curriculum.getCurrentConjectures().length;
+    return Array.from({ length: initialCount }, (_, i) => `${i + 1}`);
+  });
 
-  //Stores Chapters
-  const [chapters, setChapters] = useState(["chapter-1"]);
+  // Function to sort dialogues by chapter (numerically) and then by type (Intro first, then Outro)
+  const sortDialogues = (dialogueArray) => {
+    return [...dialogueArray].sort((a, b) => {
+      // First sort by chapter (convert to number for proper numerical sorting)
+      const chapterA = parseInt(a.chapter) || 0;
+      const chapterB = parseInt(b.chapter) || 0;
+      
+      if (chapterA !== chapterB) {
+        return chapterA - chapterB;
+      }
+      
+      // If chapters are the same, sort by type (Intro before Outro)
+      const typeOrder = { 'Intro': 0, 'Outro': 1 };
+      const typeA = typeOrder[a.type] || 0;
+      const typeB = typeOrder[b.type] || 0;
+      
+      return typeA - typeB;
+    });
+  };
+
+  // Whenever a level is added / removed, automatically mirror that change in chapters
+  useEffect(() => {
+    const levelCount = Curriculum.getCurrentConjectures().length;
+
+    // Update chapters first
+    setChapters(prev => {
+      if (levelCount === prev.length) {
+        return prev; // No change needed
+      }
+      
+      console.log(`Chapter count changing from ${prev.length} to ${levelCount}`);
+      return Array.from({ length: levelCount }, (_, i) => `${i + 1}`);
+    });
+
+    // Then update dialogues if needed
+    setDialogues(currentDialogues => {
+      let hasChanges = false;
+      const updated = currentDialogues.map(dialogue => {
+        const currentChapter = parseInt(dialogue.chapter) || 1;
+        // If dialogue chapter exceeds max, set it to the highest available chapter
+        if (currentChapter > levelCount) {
+          hasChanges = true;
+          console.log(`Moving dialogue from chapter ${currentChapter} to chapter ${levelCount}`);
+          return { ...dialogue, chapter: levelCount.toString() };
+        }
+        return dialogue;
+      });
+      
+      // Save to database if there were changes to chapter numbers
+      if (hasChanges) {
+        const gameId = Curriculum.getCurrentUUID() || gameUUID;
+        if (gameId) {
+          console.log(`Conjecture count decreased. Updating database...`);
+          // Sort the updated dialogues before saving
+          const sortedUpdated = sortDialogues(updated);
+          saveNarrativeDraftToFirebase(gameId, sortedUpdated).then(() => {
+            console.log("Chapter numbers automatically updated in database due to conjecture removal");
+          }).catch(error => {
+            console.error("✗ Error auto-saving chapter updates:", error);
+          });
+          
+          // Return sorted dialogues to update the UI immediately
+          return sortedUpdated;
+        } else {
+          console.warn("No game ID available for auto-saving chapter updates");
+        }
+      }
+      
+      return updated;
+    });
+  }, [Curriculum.getCurrentConjectures().length, gameUUID]); // Added gameUUID as dependency
 
   useEffect(() => {
     const gameId = gameUUID ?? Curriculum.getCurrentUUID();
@@ -104,108 +110,161 @@ const StoryEditorModule = (props) => {
     }
     loadGameDialoguesFromFirebase(gameId).then((loaded) => {
       if (loaded) {
-        // Ensure all dialogues have properly formatted chapters
+        const maxChapter = Math.max(1, Curriculum.getCurrentConjectures().length);
+        
+        // Ensure all dialogues have properly formatted chapters and are capped to available conjectures
+        let hasChanges = false;
         const updatedDialogues = loaded.map(dialogue => {
+          let updatedDialogue = { ...dialogue };
+          
+          // Add chapter if missing
           if (!dialogue.hasOwnProperty('chapter')) {
-            return { ...dialogue, chapter: "chapter-1" }; // Default to chapter-1
+            updatedDialogue.chapter = "1"; // Default to chapter-1
+            hasChanges = true;
           }
-          // If chapter exists but isn't formatted correctly, format it
-          else if (typeof dialogue.chapter === 'number' || 
-                  !dialogue.chapter.startsWith('chapter-')) {
-            return { ...dialogue, chapter: `chapter-${dialogue.chapter}` };
+          
+          // Cap chapter to maximum available
+          const currentChapter = parseInt(updatedDialogue.chapter) || 1;
+          if (currentChapter > maxChapter) {
+            console.log(`Capping dialogue chapter from ${currentChapter} to ${maxChapter} on load`);
+            updatedDialogue.chapter = maxChapter.toString();
+            hasChanges = true;
           }
-          return dialogue;
+          
+          return updatedDialogue;
         });
         
-        // Extract all unique chapters from dialogues
-        const uniqueChapters = [...new Set(updatedDialogues.map(d => d.chapter))];
-        if (uniqueChapters.length > 0) {
-          setChapters(uniqueChapters.sort());
-        }
+        // Sort dialogues after loading and capping
+        const sortedDialogues = sortDialogues(updatedDialogues);
+        setDialogues(sortedDialogues);
+        setLoading(false);
         
-        setDialogues(updatedDialogues);
+        // If we made changes during loading, save them back to database
+        if (hasChanges) {
+          console.log("Saving capped chapter numbers back to database...");
+          saveNarrativeDraftToFirebase(gameId, sortedDialogues).then(() => {
+            console.log("Capped chapter numbers saved to database");
+          }).catch(error => {
+            console.error("Error saving capped chapter updates:", error);
+          });
+        }
+      } else {
+          setLoading(false);
       }
     });
-  }, []);
+  }, [gameUUID]);
 
-  //Change Chapter
-  const handleChangeChapter = (dialogueIndex, newChapterName) => {
+  const dialoguesPerPage = 7;
+  const totalPages = Math.ceil(dialogues.length / dialoguesPerPage);
+
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const startIndex = currentPage * dialoguesPerPage;
+  const currentDialogues = dialogues.slice(startIndex, startIndex + dialoguesPerPage);
+
+  const handleChangeChapter = (localIndex, newChapterName) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[dialogueIndex].chapter = newChapterName;
+    updated[globalIndex].chapter = newChapterName;
     setDialogues(updated);
   }
 
-  //Add chapter, called by "Add Chapter" button
-  const handleAddChapter = () => {
-    const newChapterNumber = chapters.length + 1;
-    // Format as "chapter-X"
-    setChapters([...chapters, `chapter-${newChapterNumber}`]);
-  };
-
-  //Add a new dialogue
   const handleAddDialogue = () => {
     const newText = prompt("Enter dialogue text:");
     if (newText && newText.trim() !== "") {
       // Default to the latest chapter (or first if none exist)
-      const defaultChapter = chapters.length > 0 ? chapters[chapters.length - 1] : "chapter-1";
-      
+      if (chapters.length === 0) setChapters(["1"]);
+      const defaultChapter = chapters.length ? chapters[chapters.length - 1] : "1";      
       const newDialogue = {
         text: newText,
         character: "player",
         type: "Intro",
-        chapter: defaultChapter // Add formatted chapter
+        chapter: defaultChapter
       };
+      
       setDialogues([...dialogues, newDialogue]);
     }
   };
 
   //Remove a dialogue by index
-  const handleRemoveDialogue = (index) => {
+  const handleRemoveDialogue = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated.splice(index, 1);
+    updated.splice(globalIndex, 1);
     setDialogues(updated);
+
+    // if we removed the last item on the current page
+    // and we're not on the first page, go back one page
+    const newTotalPages = Math.ceil(updated.length / dialoguesPerPage);
+    if (currentPage >= newTotalPages && currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   //Edit a dialogue's text
-  const handleEditDialogue = (index) => {
-    const updatedText = prompt("Edit dialogue:", dialogues[index].text);
+  const handleEditDialogue = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    const updatedText = prompt("Edit dialogue:", dialogues[globalIndex].text);
     if (updatedText !== null) {
       const updated = [...dialogues];
-      updated[index].text = updatedText;
+      updated[globalIndex].text = updatedText;
       setDialogues(updated);
     }
   };
 
   //Toggle Intro/Outro
-  const handleChangeType = (index, newType) => {
+  const handleChangeType = (localIndex, newType) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[index].type = updated[index].type === "Intro" ? "Outro" : "Intro";
+    updated[globalIndex].type = updated[globalIndex].type === "Intro" ? "Outro" : "Intro";
     setDialogues(updated);
   }
 
   //Moves narrative up
-  const handleMoveup = (index) => {
-    if (index > 0) {
+  const handleMoveup = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    if (globalIndex > 0) {
       const updated = [...dialogues];
-      // Swap this item with the one above
-      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      [updated[globalIndex - 1], updated[globalIndex]] = [updated[globalIndex], updated[globalIndex - 1]];
       setDialogues(updated);
+      
+      // If moving the first item of current page up, switch to previous page to follow it
+      if (localIndex === 0 && currentPage > 0) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
   //Moves narrative down
-  const handleMoveDown = (index) => {
-    if (index < dialogues.length - 1) {
-      const updated = [... dialogues];
-      // Swap this item with the one below
-      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+  const handleMoveDown = (localIndex) => {
+    const globalIndex = startIndex + localIndex;
+    if (globalIndex < dialogues.length - 1) {
+      const updated = [...dialogues];
+      [updated[globalIndex + 1], updated[globalIndex]] = [updated[globalIndex], updated[globalIndex + 1]];
       setDialogues(updated);
+      
+      // If moving the last item of current page down, switch to next page to follow it  
+      const isLastOnPage = localIndex === currentDialogues.length - 1;
+      const isLastOverall = globalIndex === dialogues.length - 1;
+      if (isLastOnPage && !isLastOverall && currentPage < totalPages - 1) {
+        setCurrentPage(currentPage + 1);
+      }
     }
   };
 
-  const handleChangeCharacter = (index, newCharacter) => {
+  const handleChangeCharacter = (localIndex, newCharacter) => {
+    const globalIndex = startIndex + localIndex;
     const updated = [...dialogues];
-    updated[index].character = newCharacter;
+    updated[globalIndex].character = newCharacter;
     setDialogues(updated);
   }
 
@@ -218,15 +277,18 @@ const StoryEditorModule = (props) => {
     }
   
     try {
+      // Save dialogues in their current order
       await saveNarrativeDraftToFirebase(gameId, dialogues);
-      alert("Dialogues saved to the game node!");
+      alert("Dialogues saved for this game!");
+      if (typeof curricularCallback === 'function') {
+        curricularCallback();
+      }
     } catch (error) {
       console.error("Error saving dialogues:", error);
       alert("Failed to save dialogues.");
     }
     console.log("Saving to Game UUID:", gameId);
   };
-
 
   // Reset Function
   const resetCurricularValues = () => {
@@ -243,25 +305,14 @@ const StoryEditorModule = (props) => {
     mainCallback(); //use the callbackfunction
   };
 
-  // Publish function that includes reset
-  async function publishAndReset(currentUUID)  {
-    let promise = await writeToDatabaseCurricular(currentUUID);
-    if (promise != undefined) { // promise is undefined if the game cannot be published
-      // Don't reset values when publishing - this keeps dialogues accessible
-      alert("Game published successfully! Your dialogues are preserved.");
-      
-      // Optional: If you want to clear some data but KEEP the game UUID:
-      localStorage.removeItem('CurricularName');
-      localStorage.removeItem('CurricularAuthor');
-      localStorage.removeItem('CurricularKeywords');
-      localStorage.removeItem('CurricularPIN');
-      
-      // IMPORTANT: Do NOT clear the curriculum or reset the UUID
-      // This keeps the connection to your dialogues intact
-      // Curriculum.clearCurriculum(); - REMOVE THIS
-      // Curriculum.CurrentConjectures = []; - REMOVE THIS
-    }
-  };
+  if (loading) {
+    return (
+      <>
+        <Background height={height * 1.1} width={width} />
+        <PixiLoader height={height} width={width} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -271,7 +322,7 @@ const StoryEditorModule = (props) => {
           <Background height={height * 1.1} width={width} />
 
           {/* Render StoryEditorContentEditor */}
-          <StoryEditorContentEditor height={height} width={width} dialogues={dialogues} onAddDialogue={handleAddDialogue} onMoveUp={handleMoveup} 
+          <StoryEditorContentEditor height={height} width={width} dialogues={currentDialogues} onAddDialogue={handleAddDialogue} onMoveUp={handleMoveup} 
                                     onRemoveDialogue={handleRemoveDialogue} onEditDialogue={handleEditDialogue} onChangeType={handleChangeType}
                                     onMoveDown={handleMoveDown} idToSprite={idToSprite} onChangeCharacter={handleChangeCharacter} chapters={chapters}
                                     onChangeChapter={handleChangeChapter} />
@@ -287,26 +338,15 @@ const StoryEditorModule = (props) => {
             fontColor={white}
             text={"BACK"}
             fontWeight={800}
-            callback={mainCallback}
+            callback={curricularCallback}
           />
+          
           <RectButton
             height={height * 0.13}
-            width={width * 0.45}
-            x={width * 0.06}
+            width={width * 0.65}
+            x={width * 0.38}
             y={height * 0.93}
             color={indigo}
-            fontSize={width * 0.014}
-            fontColor={white}
-            text={"ADD CHAPTER"}
-            fontWeight={800}
-            callback={handleAddChapter}
-          />
-          <RectButton
-            height={height * 0.13}
-            width={width * 0.45}
-            x={width * 0.3}
-            y={height * 0.93}
-            color={green}
             fontSize={width * 0.013}
             fontColor={white}
             text={"ADD DIALOGUE"}
@@ -316,7 +356,7 @@ const StoryEditorModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.25}
-            x={width * 0.53}
+            x={width * 0.73}
             y={height * 0.93}
             color={green}
             fontSize={width * 0.013}
@@ -324,6 +364,33 @@ const StoryEditorModule = (props) => {
             text={"SAVE"}
             fontWeight={800}
             callback={handleSaveDialogues}
+          />
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.02}
+            y={height * 0.93}
+            color={blue}
+            fontSize={width * 0.014}
+            fontColor={white}
+            text={"PREVIOUS"}
+            fontWeight={800}
+            callback={totalPages <= 1 || currentPage === 0 ? null : prevPage}
+            alpha={totalPages <= 1 || currentPage === 0 ? 0.3 : 1}
+          />
+
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.14}
+            y={height * 0.93}
+            color={blue}
+            fontSize={width * 0.014}
+            fontColor={white}
+            text={"NEXT"}
+            fontWeight={800}
+            callback={totalPages <= 1 || currentPage === totalPages - 1 ? null : nextPage}
+            alpha={totalPages <= 1 || currentPage === totalPages - 1 ? 0.3 : 1}
           />
         </>
       )}

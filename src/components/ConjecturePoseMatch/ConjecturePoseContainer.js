@@ -8,7 +8,8 @@ import { promiseChecker, writeToDatabase } from "../../firebase/database.js";
 
 const ConjecturePoseContainer = (props) => {
     const {
-        poses, 
+        poses,
+        tolerances, 
         needBack,
         height,
         width,
@@ -18,7 +19,8 @@ const ConjecturePoseContainer = (props) => {
         mainCallback,
         poseData,
         UUID,
-        onCompleteCallback 
+        onCompleteCallback,
+        gameID
     } = props;
 
     const drawModalBackground = useCallback((g) => {
@@ -56,7 +58,7 @@ const ConjecturePoseContainer = (props) => {
             // Call the writeToDatabase function with the current poseData, conjecture index,
             // and fps parameter. Push the resulting promise object to the promises array.
             promises.push(
-              writeToDatabase(poseData, UUID, frameRate)
+              writeToDatabase(poseData, UUID, frameRate, gameID)
             );
             // Call the promiseChecker function to detect any data loss in the promises array
             // and trigger an alert if necessary.
@@ -81,6 +83,7 @@ const ConjecturePoseContainer = (props) => {
         <Graphics draw={drawModalBackground} />
         <ConjecturePoseMatch
             poses={poses}
+            tolerances={tolerances}
             height={height}
             width={width}
             columnDimensions={columnDimensions}
@@ -91,6 +94,7 @@ const ConjecturePoseContainer = (props) => {
             UUID={UUID}
             onCompleteCallback={onCompleteCallback}
             needBack={needBack}
+            gameID={gameID}
         />
     </>
     );

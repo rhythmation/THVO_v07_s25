@@ -135,9 +135,12 @@ const NewUserModule = (props) => {
             fontColor={white}
             text={"Add New User"}
             fontWeight={800}
-            callback={() => {
-                writeNewUserToDatabase(email, userRole);
-            }}
+            callback={async () => {
+           // wait for the DB write to finish…
+            await writeNewUserToDatabase(email, userRole);
+           // …then navigate back so the list (which re-fetches on mount) sees the new user
+           UserManagementCallback();
+       }}
         />
     </>
     );

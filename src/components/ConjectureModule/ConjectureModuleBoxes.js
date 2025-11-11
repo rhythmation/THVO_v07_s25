@@ -1,33 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Graphics, Text } from "@inlet/react-pixi";
 import { TextStyle } from "@pixi/text";
 import { yellow, blue, green, white, red, black } from "../../utils/colors";
 import InputBox from "../InputBox";
 import { getEditLevel } from './ConjectureModule';
+import { sanitizeValue } from "../../utils/sanitize";
 
-function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback) {
-  const text = localStorage.getItem(textKey)?.slice(0, charLimit) +
-               (localStorage.getItem(textKey)?.length > charLimit ? '...' : '');
+function safeSetItem(key, val) {
+  if (val !== undefined && val !== null && val.toString().trim() !== '') {
+    localStorage.setItem(key, val);
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
+function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yMultiplier, textKey, totalWidth, totalHeight, inputCallback, disabled = false, username = null) {
+    // fetch value once
+    const raw = localStorage.getItem(textKey);
+
+  const placeholderMap = {
+    'Conjecture Name':       'Enter level name…',
+    'Author Name':           'Author',
+    'PIN':                   '4-digit PIN',
+    'Conjecture Description':'Add a short description…',
+    'Conjecture Keywords':   'keyword1, keyword2',
+    'Multiple Choice 1':     'Choice A',
+    'Multiple Choice 2':     'Choice B',
+    'Multiple Choice 3':     'Choice C',
+    'Multiple Choice 4':     'Choice D',
+  };
+
+
+  let displayValue = sanitizeValue(raw);
+
+  if (textKey === 'Author Name' && !displayValue && username) {
+    displayValue = username;
+  }
+
+  const isPlaceholder = displayValue === '';  
+const text = displayValue
+    ? (displayValue.length > charLimit ? displayValue.slice(0, charLimit) + '…' : displayValue)
+    : placeholderMap[textKey] ?? '';
 
   const height = totalHeight * scaleFactor;
   const width = totalWidth * widthMultiplier;
   const x = totalWidth * xMultiplier;
   const y = totalHeight * yMultiplier;
 
-  
   return (
     <InputBox
       height={height}
       width={width}
       x={x}
       y={y}
-      color={white}
+      color={disabled ? blue : white}
       fontSize={totalWidth * 0.012}
-      fontColor={black}
+      fontColor={disabled ? white : (isPlaceholder ? '#888' : black)}
       text={text}
-      fontWeight={500}
-      outlineColor={black}
-      callback={() => {
+      fontWeight={disabled ? 1000 : 500}
+      callback={disabled ? null : () => {
         if(getEditLevel())
           inputCallback(textKey);
       }}
@@ -36,7 +67,15 @@ function createInputBox(charLimit, scaleFactor, widthMultiplier, xMultiplier, yM
 }
 
 export const NameBox = (props) => {
-  const { height, width } = props;
+  const { height, width, username, boxState } = props;
+  const [, setRefresh] = useState(0);
+
+  // Auto-populate author name with username if no previous author exists
+  useEffect(() => {
+    if (username && !localStorage.getItem('Author Name')) {
+      localStorage.setItem('Author Name', username);
+    }
+  }, [username]);
 
   let titleText = "";
   if(getEditLevel())
@@ -50,6 +89,7 @@ export const NameBox = (props) => {
 
     if (newValue !== null) {
       localStorage.setItem(key, newValue);
+      setRefresh((n) => n + 1);
     }
   }
 
@@ -61,7 +101,7 @@ export const NameBox = (props) => {
       {createInputBox(220, 0.19, 1.595, 0.134, 0.75, 'Multiple Choice 3', width, height, handleBoxInput)}
       {createInputBox(220, 0.19, 1.595, 0.134, 0.84, 'Multiple Choice 4', width, height, handleBoxInput)}
       {createInputBox(60, 0.10, 0.54, 0.143+ 0.062, 0.136-.050, 'Conjecture Name', width, height, handleBoxInput)}
-      {createInputBox(220, 0.10, .3, 0.46+ 0.062, 0.136-.050, 'Author Name', width, height, handleBoxInput)}
+      {createInputBox(220, 0.10, .3, 0.46+ 0.062, 0.136-.050, 'Author Name', width, height, null, true, username)}
       {createInputBox(220, 0.30, 1.595, 0.134, 0.175-.050, 'Conjecture Description', width, height, handleBoxInput)}
       {createInputBox(220, 0.10, 1.268, 0.203 + 0.062, 0.295-.050, 'Conjecture Keywords', width, height, handleBoxInput)}
 
@@ -101,19 +141,42 @@ function createTextElement(text, xMultiplier, yMultiplier, fontSizeMultiplier, t
 
 export const PINBox = (props) => {
   const { height, width } = props;
+  const [, setRefresh] = useState(0);
 
   // Creates a popup in which the user can set a pin for their conjecture
+    /* 1.  local state mirrors storage so UI is stable */
+const [pinValue, setPinValue] = useState(
+  sanitizeValue(localStorage.getItem('PIN'))
+);
+  /* 2.  popup handler */
   function pinBoxInput() {
-    if(getEditLevel()){
-      const existingPin = localStorage.getItem('PIN');
-      let pin = prompt("Please Enter Your PIN", existingPin);
+    if (!getEditLevel()) return;
 
-      if (!isNaN(pin) && pin !== null) {
-        localStorage.setItem('PIN', pin);
-      } else if (pin !== null) {
-        alert('PIN must be numeric');
-      }
-    }
+    const newPin = prompt('Please enter a 4-digit PIN', pinValue);
+
+    if (newPin === null) return;                 // user hit Cancel
+    if (isNaN(newPin))  return alert('PIN must be numeric');
+
+  safeSetItem('PIN', newPin);    
+  setPinValue(newPin);                         // ← triggers rerender, no flicker
+  }
+
+  // Determine what text to display
+  let displayText;
+  let fontColor;
+
+  if (!getEditLevel()) {
+    // In preview mode, always show asterisks
+    displayText = '****';
+    fontColor = black;
+  } else if (pinValue) {
+    // In edit mode with a PIN set, show the actual PIN
+    displayText = pinValue;
+    fontColor = black;
+  } else {
+    // No PIN set, show placeholder
+    displayText = '4-digit PIN';
+    fontColor = '#888';
   }
 
   return (
@@ -126,10 +189,8 @@ export const PINBox = (props) => {
         y={height * 0.085}
         color={white}
         fontSize={width * 0.013}
-        fontColor={black}
-        text={
-          localStorage.getItem('PIN') || ' ' // Show existing PIN if available
-        }
+        text={displayText}
+        fontColor={fontColor}
         fontWeight={300}
         callback={pinBoxInput} // Create Popup
       />

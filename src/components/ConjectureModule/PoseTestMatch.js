@@ -13,8 +13,9 @@ import  PoseMatching  from "../PoseMatching";
 
 
 const PoseTestMatch = (props) => {
-  const { height, width, columnDimensions, conjectureCallback, poseData} = props;
+  const { height, width, columnDimensions, conjectureCallback, poseData, gameID} = props;
   const [poses, setPoses] = useState(null);
+  const [tolerances, setTolerances] = useState([]);
 
   // Background for Pose Matching
   const drawModalBackground = useCallback((g) => {
@@ -31,22 +32,19 @@ const PoseTestMatch = (props) => {
 
   // Get pose data from local storage
   useEffect(() => {
-    startPose = JSON.parse(localStorage.getItem("start.json"))
-    intermediatePose = JSON.parse(localStorage.getItem("intermediate.json"))
-    endPose = JSON.parse(localStorage.getItem("end.json"))
-    // Get Tolerance from local storage
-    startTolerance = parseInt(localStorage.getItem("Start Tolerance"))
-    intermediateTolerance = parseInt(localStorage.getItem("Intermediate Tolerance"))
-    endTolerance = parseInt(localStorage.getItem("End Tolerance"))
-    // If the poses are all there, set tolerance and poses variable
-    // TODO: Make this more efficient
-    if (startPose != null && endPose != null && intermediatePose != null) {
-      startPose["tolerance"] = startTolerance || 45
-      intermediatePose["tolerance"] = intermediateTolerance || 45;
-      endPose["tolerance"] = endTolerance || 45;
-      setPoses([startPose, intermediatePose, endPose])
+    const startPose = JSON.parse(localStorage.getItem("start.json"));
+    const intermediatePose = JSON.parse(localStorage.getItem("intermediate.json"));
+    const endPose = JSON.parse(localStorage.getItem("end.json"));
+
+    const startTolerance = parseInt(localStorage.getItem("Start Tolerance")) || 45;
+    const intermediateTolerance = parseInt(localStorage.getItem("Intermediate Tolerance")) || 45;
+    const endTolerance = parseInt(localStorage.getItem("End Tolerance")) || 45;
+
+    if (startPose && intermediatePose && endPose) {
+      setPoses([startPose, intermediatePose, endPose]);
+      setTolerances([startTolerance, intermediateTolerance, endTolerance]);
     }
-}, []);
+  }, []);
 
 return(
   <> 
@@ -63,6 +61,8 @@ return(
           ].flat()}
           columnDimensions={columnDimensions}
           onComplete={conjectureCallback}
+          gameID={gameID}
+          tolerances={tolerances}
         />
         {/* Back Button */}
         <RectButton

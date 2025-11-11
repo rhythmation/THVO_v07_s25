@@ -1,14 +1,15 @@
-// AKA Game module
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import Background from "../Background";
 import { blue, white, red, green, indigo, hotPink, purple } from "../../utils/colors";
-import Button from "../Button"
+import Button from "../Button";
 import RectButton from "../RectButton";
-import { writeToDatabaseCurricular, writeToDatabaseCurricularDraft, getConjectureDataByUUID } from "../../firebase/database";
+// Import necessary Firebase functions
+import { getDatabase, ref, get, update } from "firebase/database";
+import { getAuth } from "firebase/auth"; // Import getAuth
+import { getConjectureDataByUUID, deleteFromDatabaseCurricular, loadGameDialoguesFromFirebase, saveGame } from "../../firebase/database";
 import { CurricularContentEditor } from "../CurricularModule/CurricularModuleBoxes";
-import { useMachine } from "@xstate/react";
 import { setAddtoCurricular } from '../ConjectureSelector/ConjectureSelectorModule';
-import Settings from '../Settings'; // Import the Settings component
+import Settings from '../Settings';
 
 //Import uuid library
 const { v4: uuidv4 } = require("uuid");
@@ -30,67 +31,66 @@ export const Curriculum = {
     return this.CurrentConjectures[index];
   },
 
-  getCurrentUUID(){ //return the UUID if editing an existing game
-    if(this.CurrentUUID != null && this.CurrentUUID != ""){
+  getCurrentUUID() { //return the UUID if editing an existing game
+    if (this.CurrentUUID != null && this.CurrentUUID != "") {
       return this.CurrentUUID;
     }
-    else{
+    else {
       return null;
     }
   },
 
-  setCurrentUUID(newUUID){
+  setCurrentUUID(newUUID) {
     this.CurrentUUID = newUUID;
   },
 
-  moveConjectureUpByIndex(index){ // swaps 2 elements so the index rises up the list
-    if(index > 0) {
+  moveConjectureUpByIndex(index) { // swaps 2 elements so the index rises up the list
+    if (index > 0) {
       const temp = this.CurrentConjectures[index - 1];
       this.CurrentConjectures[index - 1] = this.CurrentConjectures[index];
       this.CurrentConjectures[index] = temp;
     }
   },
 
-  moveConjectureDownByIndex(index){ // swaps 2 elements so the index falls down the list
-    if(index < this.CurrentConjectures.length - 1){
+  moveConjectureDownByIndex(index) { // swaps 2 elements so the index falls down the list
+    if (index < this.CurrentConjectures.length - 1) {
       const temp = this.CurrentConjectures[index + 1];
       this.CurrentConjectures[index + 1] = this.CurrentConjectures[index];
       this.CurrentConjectures[index] = temp;
     }
   },
 
-  removeConjectureByIndex(index){ // remove a particular conjecture based on its index in the list
+  removeConjectureByIndex(index) { // remove a particular conjecture based on its index in the list
     this.CurrentConjectures.splice(index, 1);;
   },
 
-  async setCurricularEditor(curricular){ // fill in curriculum data
+  async setCurricularEditor(curricular) { // fill in curriculum data
     this.CurrentConjectures = []; // remove previous list of levels
-    if(curricular["ConjectureUUIDs"]){ // only fill in existing values
-      for(i=0; i < curricular["ConjectureUUIDs"].length; i++){
-        conjectureList = await getConjectureDataByUUID(curricular["ConjectureUUIDs"][i]); //getConjectureDataByUUID returns a list
-        conjecture = conjectureList[curricular["ConjectureUUIDs"][i]]; // get the specific conjecture from that list
+    if (curricular["ConjectureUUIDs"]) { // only fill in existing values
+      for (let i = 0; i < curricular.ConjectureUUIDs.length; i++) {
+        const conjectureList = await getConjectureDataByUUID(curricular.ConjectureUUIDs[i]);
+        const conjecture = conjectureList[curricular.ConjectureUUIDs[i]];
         this.CurrentConjectures.push(conjecture);
       }
     }
-      localStorage.setItem('CurricularName', curricular["CurricularName"]);
-      localStorage.setItem('CurricularAuthor', curricular["CurricularAuthor"]);
-      localStorage.setItem('CurricularKeywords', curricular["CurricularKeywords"]);
-      if(curricular["CurricularPIN"] != "undefined" && curricular["CurricularPIN"] != null){
-        localStorage.setItem('CurricularPIN', curricular["CurricularPIN"]);
-      }
+    localStorage.setItem('CurricularName', curricular["CurricularName"]);
+    localStorage.setItem('CurricularAuthor', curricular["CurricularAuthor"]);
+    localStorage.setItem('CurricularKeywords', curricular["CurricularKeywords"]);
+    if (curricular["CurricularPIN"] != "undefined" && curricular["CurricularPIN"] != null) {
+      localStorage.setItem('CurricularPIN', curricular["CurricularPIN"]);
+    }
   },
 
-  clearCurriculum(){
+  clearCurriculum() {
     this.CurrentConjectures = []; // remove previous list of levels
     this.setCurrentUUID(null); // remove UUID
   },
 };
 
 const CurricularModule = (props) => {
-  const { height, width, mainCallback, conjectureSelectCallback, conjectureCallback, storyEditorCallback } = props;
+  const { height, width, userName, mainCallback, conjectureCallback, conjectureSelectCallback, storyEditorCallback } = props;
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
-  // Reset Function
   const resetCurricularValues = () => {
     localStorage.removeItem('CurricularName');
     localStorage.removeItem('CurricularAuthor');
@@ -99,39 +99,49 @@ const CurricularModule = (props) => {
     Curriculum.clearCurriculum();
   };
 
-  // Reset Function
   const enhancedMainCallback = () => {
-    resetCurricularValues(); // Reset values before going back
-    mainCallback(); //use the callbackfunction
+    resetCurricularValues();
+    mainCallback();
   };
 
-  // Publish function that includes reset
-  async function publishAndReset(currentUUID)  {
-    let promise = await writeToDatabaseCurricular(currentUUID);
-    if (promise != undefined) { // promise is undefined if the game cannot be published
-      // Don't reset values when publishing - this keeps dialogues accessible
-      alert("Game published successfully! Your dialogues are preserved.");
-      
-      // Optional: If you want to clear some data but KEEP the game UUID:
-      localStorage.removeItem('CurricularName');
-      localStorage.removeItem('CurricularAuthor');
-      localStorage.removeItem('CurricularKeywords');
-      localStorage.removeItem('CurricularPIN');
-      
-      // IMPORTANT: Do NOT clear the curriculum or reset the UUID
-      // This keeps the connection to your dialogues intact
+  const deleteCurrentCurricular = async (currentUUID) => {
+    if (!currentUUID) {
+      alert("No game to delete.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this entire game? This action cannot be undone."
+    );
+
+    if (confirmDelete) {
+      try {
+        // Also remove the game from the gameNames index
+        const gameName = localStorage.getItem('CurricularName');
+        const db = getDatabase();
+        const updates = {};
+        updates[`/Game/${currentUUID}`] = null; // Delete game data
+        if (gameName) {
+          updates[`/gameNames/${gameName.trim()}`] = null; // Delete name from index
+        }
+        await update(ref(db), updates);
+
+        enhancedMainCallback();
+      } catch (error) {
+        console.error('Error during deletion:', error);
+        alert("Failed to delete game. Please try again.");
+        enhancedMainCallback();
+      }
     }
   };
 
+
   return (
     <>
-      {/* Render the main page content only when the Settings menu is NOT open */}
       {!showSettingsMenu && (
         <>
           <Background height={height * 1.1} width={width} />
-
-          {/* Render CurricularContentEditor */}
-          <CurricularContentEditor height={height} width={width} conjectureCallback={conjectureCallback} />
+          <CurricularContentEditor height={height} width={width} userName={userName} conjectureCallback={conjectureCallback}/>
 
           {/* Buttons */}
           <RectButton
@@ -144,10 +154,7 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"SET GAME OPTIONS"}
             fontWeight={800}
-            callback={() => {
-              console.log("Settings Menu button clicked! Sending STORYEDITOR...")
-              setShowSettingsMenu(true)// Open Settings menu
-            }}
+            callback={() => setShowSettingsMenu(true)}
           />
           <RectButton
             height={height * 0.13}
@@ -160,16 +167,13 @@ const CurricularModule = (props) => {
             text={"STORY EDITOR"}
             fontWeight={800}
             callback={() => {
-              console.log("STORY EDITOR button clicked!")
-              // If there is no current game ID, generate one now:
               if (!Curriculum.getCurrentUUID()) {
-                const newId = uuidv4();  // same approach as in your database code
+                const newId = uuidv4();
                 Curriculum.setCurrentUUID(newId);
               }
               if (storyEditorCallback) {
                 const currentUUID = Curriculum.getCurrentUUID();
                 storyEditorCallback(currentUUID);
-                console.log("State change function was called!"); //Log after calling
               } else {
                 console.error("Error: storyEditorCallback is undefined!");
               }
@@ -187,7 +191,7 @@ const CurricularModule = (props) => {
             fontWeight={800}
             callback={() =>
               alert(
-                "Click +Add Conjecture to add a level to the game.\nPress Save Draft to save an incomplete game.\nPress Publish to save a completed game."
+                "Click +Add Level to add a level to the game.\nPress Save Draft to save an incomplete game.\nPress Publish to save a completed game."
               )
             }
           />
@@ -201,17 +205,22 @@ const CurricularModule = (props) => {
             fontColor={white}
             text={"BACK"}
             fontWeight={800}
-            callback={enhancedMainCallback}
+            callback={() => {
+              const confirmBack = window.confirm("The game hasnt been saved. Are you sure you want to go back?");
+              if (confirmBack) {
+                enhancedMainCallback();
+              }
+            }}
           />
           <RectButton
             height={height * 0.13}
             width={width * 0.45}
-            x={width * 0.3}
+            x={width * 0.275}
             y={height * 0.93}
             color={indigo}
             fontSize={width * 0.014}
             fontColor={white}
-            text={"+Add Conjecture"}
+            text={"+Add Level"}
             fontWeight={800}
             callback={() => {
               setAddtoCurricular(true);
@@ -221,38 +230,59 @@ const CurricularModule = (props) => {
           <RectButton
             height={height * 0.13}
             width={width * 0.26}
-            x={width * 0.55}
+            x={width * 0.46}
             y={height * 0.93}
             color={green}
             fontSize={width * 0.013}
             fontColor={white}
             text={"SAVE DRAFT"}
             fontWeight={800}
-            callback={() => writeToDatabaseCurricularDraft(Curriculum.getCurrentUUID())}
+            callback={async () => {
+              const success = await saveGame(Curriculum.getCurrentUUID(), false);
+              if (success) {
+                enhancedMainCallback();
+              }
+            }}
+          />
+          <RectButton
+            height={height * 0.13}
+            width={width * 0.26}
+            x={width * 0.57}
+            y={height * 0.93}
+            color={green}
+            fontSize={width * 0.015}
+            fontColor={white}
+            text={"PUBLISH"}
+            fontWeight={800}
+            callback={async () => {
+              const success = await saveGame(Curriculum.getCurrentUUID(), true);
+              if (success) {
+                enhancedMainCallback();
+              }
+            }}
           />
           <RectButton
             height={height * 0.13}
             width={width * 0.26}
             x={width * 0.73}
             y={height * 0.93}
-            color={blue}
-            fontSize={width * 0.015}
+            color={red}
+            fontSize={width * 0.013}
             fontColor={white}
-            text={"PUBLISH"}
+            text={"DELETE"}
             fontWeight={800}
-            callback={() => publishAndReset(Curriculum.getCurrentUUID())}
+            callback={() => deleteCurrentCurricular(Curriculum.getCurrentUUID())}
           />
         </>
       )}
 
-      {/* Render the Settings menu */}
       {showSettingsMenu && (
         <Settings
           width={width * 0.6}
           height={height * 0.6}
           x={width * 0.18}
           y={height * 0.17}
-          onClose={() => setShowSettingsMenu(false)} // Close Settings menu
+          onClose={() => setShowSettingsMenu(false)}
         />
       )}
     </>

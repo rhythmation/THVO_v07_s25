@@ -24,13 +24,18 @@ const UserManagementModule = (props) => {
     const refreshUserList = async () => {
         try {
 
-            const organization = await getUserOrganizationFromDatabase();
-            console.log(organization)
-            setLoading(true);
+                  setLoading(true);
 
-            const users = await getUsersByOrganizationFromDatabase(organization);
-            console.log('User:', JSON.stringify(users[0], null, 2));
-            setUsersList(users);
+      /* 1.  fetch org (may be null for brand-new users) */
+      const organization = await getUserOrganizationFromDatabase();
+      if (!organization) {
+        console.warn('No organization found for current user');
+        setUsersList([]);
+        return;      }
+      /* 2.  fetch users – returns [] on empty org */
+      const users = await getUsersByOrganizationFromDatabase(organization);
+      console.log('User 0:', users.length ? users[0] : 'none');
+      setUsersList(users);
         } catch (error) {
             console.error('Error fetching users:', error);
         } finally {

@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useMachine, useSelector, assign } from "@xstate/react";
 import chapterMachine from "../machines/chapterMachine.js";
 import { Sprite } from "@inlet/react-pixi";
-import Experiment from "./Experiment.js";
 import script from "../scripts/chapters.toml";
 import { Curriculum } from "./CurricularModule/CurricularModule";
 import { loadGameDialoguesFromFirebase } from "../firebase/database.js";
@@ -215,57 +214,90 @@ const Chapter = (props) => {
           const rawDialogues = await loadGameDialoguesFromFirebase(gameId);
           const allDialogues = Object.values(rawDialogues || {});
           
-          if (allDialogues && allDialogues.length > 0) {
-            const currentChapterName = `chapter-${currentConjectureIdx + 1}`;
-            console.log('=== FILTERING DIALOGUES ===');
-            console.log('Looking for chapter:', currentChapterName);
-            
-            const chapterDialogues = allDialogues.filter(
-              dialogue => dialogue.chapter === currentChapterName
-            );
-            console.log('Found dialogues:', chapterDialogues);
+          const currentChapterName = `${currentConjectureIdx + 1}`;
+          console.log('=== FILTERING DIALOGUES ===');
+          console.log('Looking for chapter:', currentChapterName);
+          
+          const chapterDialogues = allDialogues.filter(
+            dialogue => dialogue.chapter === currentChapterName
+          );
+          console.log('Found dialogues:', chapterDialogues);
 
-            const intros = chapterDialogues
-              .filter(dialogue => dialogue.type === "Intro")
-              .map(dialogue => ({ 
-                text: dialogue.text, 
-                speaker: dialogue.character || "player"
-              }));
-            console.log('Filtered intros:', intros);
-              
-            const outros = chapterDialogues
-              .filter(dialogue => dialogue.type === "Outro")
-              .map(dialogue => ({
-                text: dialogue.text, 
-                speaker: dialogue.character || "player"
-              }));
-            console.log('Filtered outros:', outros);
+          const loadedIntros = chapterDialogues
+            .filter(dialogue => dialogue.type === "Intro")
+            .map(dialogue => ({ 
+              text: dialogue.text, 
+              speaker: dialogue.character || "player"
+            }));
 
-            const scene = [];
-            if (script[currentChapterName] && script[currentChapterName].scene) {
-              scene.push(...script[currentChapterName].scene);
-            }
+          const intros = loadedIntros.length > 0
+            ? loadedIntros
+            : [
+                { text: "Welcome to ShapeLand.", speaker: "narrator" },
+                { text: "Let's begin our journey!", speaker: "player" },
+              ];
+          
+          const loadedOutros = chapterDialogues
+            .filter(dialogue => dialogue.type === "Outro")
+            .map(dialogue => ({
+              text: dialogue.text, 
+              speaker: dialogue.character || "player"
+            }));
 
-            console.log('=== UPDATING STATE ===');
-            console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
-            setDialogueData({
-              intro: intros,
-              outro: outros,
-              scene: scene
-            });
+          const outros = loadedOutros.length > 0
+            ? loadedOutros
+            : [
+                { text: "You are a good Geometric Thinker!", speaker: "narrator" },
+                { text: "Ready for what's next?", speaker: "player" },
+              ];
 
-            console.log('Sending RESET_CONTEXT to state machine');
-            send({
-              type: "RESET_CONTEXT",
-              introText: intros,
-              outroText: outros,
-              scene: scene,
-              currentText: isOutro ? outros[0] : intros[0],
-              lastText: [],
-              cursorMode: true,
-              isOutro: isOutro,
-            });
+          console.log('Filtered intros:', intros);
+          console.log('Filtered outros:', outros);
+          
+          let scene = [];
+
+          if (script[currentChapterName] && script[currentChapterName].scene) {
+            scene = [...script[currentChapterName].scene];
+          } else {
+            console.warn(`No scene found for chapter ${currentChapterName}, using default scene.`);
+            scene = [
+              {
+                id: "equilateralTriangle",
+                distance: "foreground",
+                placement: "left",
+                mood: "neutral",
+                color: "blue",
+              },
+              {
+                id: "rectangle",
+                distance: "midground",
+                placement: "right",
+                mood: "happy",
+                color: "green",
+              },
+            ];
           }
+
+
+          console.log('=== UPDATING STATE ===');
+          console.log('Setting dialogueData for chapter:', currentConjectureIdx + 1);
+          setDialogueData({
+            intro: intros,
+            outro: outros,
+            scene: scene
+          });
+
+          console.log('Sending RESET_CONTEXT to state machine');
+          send({
+            type: "RESET_CONTEXT",
+            introText: intros,
+            outroText: outros,
+            scene: scene,
+            currentText: isOutro ? outros[0] : intros[0],
+            lastText: [],
+            cursorMode: true,
+            isOutro: isOutro,
+          });
         } catch (error) {
           console.error("Error loading dialogues:", error);
         } finally {
@@ -313,20 +345,30 @@ const Chapter = (props) => {
   }, [service]);
 
   useEffect(() => {
-    if (characters && currentText) {
-      // console.log("There are characters and current text is set.");
-      // console.log("Characters", characters);
-      // console.log("Current Text", currentText);
+      let spriteImage;
+      
+      if (characters && currentText && currentText.speaker && idToSprite[currentText.speaker]) {
+        // console.log("There are characters and current text is set.");
+        // console.log("Characters", characters);
+        // console.log("Current Text", currentText);
+        spriteImage = idToSprite[currentText.speaker];
+      } else {
+        // Use default speaker for any error condition
+        if (currentText && currentText.speaker && !idToSprite[currentText.speaker]) {
+          console.warn(`Speaker "${currentText.speaker}" not found in idToSprite mapping, using default`);
+        }
+        spriteImage = idToSprite.equilateralTriangle;
+      }
+      
       setSpeaker(
         <Sprite
-          image={idToSprite[currentText.speaker]}
+          image={spriteImage}
           x={0}
           y={0}
           anchor={0}
         />
       );
-    }
-  }, [characters, currentText]);
+    }, [characters, currentText]);
 
   // Show loading state
   if (isLoading) {
@@ -358,9 +400,10 @@ const Chapter = (props) => {
         <Pose poseData={poseData} colAttr={columnDimensions(3)} />
       )}
       {cursorMode && (
-        <CursorMode 
-          rowDimensions={rowDimensions} 
-          poseData={poseData} 
+        <CursorMode
+          poseData={poseData}
+          colAttr={columnDimensions(3)}  // ← NEW
+          rowDimensions={rowDimensions}
           callback={handleAdvance}
         />
       )}

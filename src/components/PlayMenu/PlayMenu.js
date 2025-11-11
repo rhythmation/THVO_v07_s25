@@ -21,29 +21,14 @@ import PoseTest from "../ConjectureModule/PoseTest";
 import DataMenu from "./DataMenu.js";
 
 const PlayMenu = (props) => {
-    const {width, height, poseData, columnDimensions, rowDimensions, role, logoutCallback} = props;
+    const {width, height, columnDimensions, rowDimensions, userName, role, logoutCallback} = props;
     const [buttonList, setButtonList] = useState([]);
     const [distanceBetweenButtons, setDistanceBetweenButtons] = useState();
     const [startingX, setStartingX] = useState();
     const [state, send] = useMachine(PlayMenuMachine);
-    const [userRole, setUserRole] = useState(null);
+    const [userRole, setUserRole] = useState(role);
     const [isDataMenuVisable, setdataMenuVisable] = useState(false);
     
-    // On render get user role
-    const fetchData = async () => {
-        try {
-          const role = await getUserRoleFromDatabase();
-          setUserRole(role);
-    
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        }
-      };
-    
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     useEffect(() => {
         // Calculate the distance for buttons
         const totalAvailableWidth = width * 0.85 * (buttonList.length/7);
@@ -55,8 +40,6 @@ const PlayMenu = (props) => {
     }, [buttonList, width, height]);
     
     useEffect(() => {
-        //get user role
-        // TODO: Make this more efficient and dynamic, changing based on what the org wants
         let role = userRole;
         let list = [];
         if(role === "Admin" || role === "Developer"){ // if user is not a student
@@ -67,10 +50,10 @@ const PlayMenu = (props) => {
                 {text: "Play Game", callback: () => (setPlayGame(true), send("GAMESELECT")), color: royalBlue},
                 {text: "New Level", callback: () => (setEditLevel(true), send("NEWLEVEL")), color: dodgerBlue},
                 {text: "Edit Level", callback: () => (setAddtoCurricular(false),send("LEVELSELECT")), color: steelBlue},
-                {text: "Settings", callback: () => console.log("Settings clicked"), color: cornflowerBlue},
+                {text: "Settings", callback: () => send("SETTINGS"), color: cornflowerBlue},
             );
         } else if (role === "Student"){
-            list.push({text: "Play", callback: () => (setPlayGame(true), send("GAMESELECT")), color: royalBlue}, {text: "Settings", callback: () => console.log("Settings clicked"), color: cornflowerBlue})
+            list.push({text: "Play", callback: () => (setPlayGame(true), send("GAMESELECT")), color: royalBlue}, {text: "Settings", callback: () => send("SETTINGS"), color: cornflowerBlue})
         } else if (role === "Teacher"){
             list.push(
                 {text: "New Game", callback: () => send("NEWGAME"), color: purple},
@@ -78,7 +61,7 @@ const PlayMenu = (props) => {
                 {text: "Play", callback: () => send("PLAY"), color: royalBlue},
                 {text: "New Level", callback: () => (setEditLevel(true), send("NEWLEVEL")), color: dodgerBlue},
                 {text: "Edit Level", callback: () => (setAddtoCurricular(false),send("LEVELSELECT")), color: steelBlue},
-                {text: "Settings", callback: () => console.log("Settings clicked"), color: cornflowerBlue},
+                {text: "Settings", callback: () => send("SETTINGS"), color: cornflowerBlue},
             );
         }
             setButtonList(list);
@@ -99,7 +82,7 @@ const PlayMenu = (props) => {
             fontColor={white}
             text={"Log Out"}
             fontWeight={800}
-            callback={() => firebase.auth().signOut()}
+            callback={logoutCallback}
           />
         </>
         )}
@@ -145,10 +128,10 @@ const PlayMenu = (props) => {
           <PoseTest
             width={width}
             height={height}
-            poseData={poseData}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
             conjectureCallback={() => send("NEWLEVEL")}
+            gameID={Curriculum.getCurrentUUID()}
           />
         )}
         {state.value === "newLevel" && ( //if the state is newLevel, show the Conjecture Module
@@ -157,6 +140,7 @@ const PlayMenu = (props) => {
                 height={height}
                 columnDimensions={columnDimensions}
                 rowDimensions={rowDimensions}
+                userName={userName}
                 editCallback={() => send("EDIT")}
                 // getGoBackFromLevelEdit should be "MAIN", "LEVELSELECT", or "NEWGAME"
                 backCallback={() => send(getGoBackFromLevelEdit())}
@@ -167,7 +151,6 @@ const PlayMenu = (props) => {
             <PoseAuthoring
             width={width}
             height={height}
-            poseData={poseData}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
             conjectureCallback={() => send("NEWLEVEL")}  // goes to the Conjecture Module
@@ -181,13 +164,18 @@ const PlayMenu = (props) => {
                 backCallback={()=> send("MAIN")}
                 columnDimensions={columnDimensions}
                 rowDimensions={rowDimensions}
-                poseData={poseData}
                 gameUUID={Curriculum.getCurrentUUID()}
             /> 
         )}
         {state.value === "settings" && (
             <Settings
-        />)}
+                width={width/1.2}
+                height={height/1.2}
+                x = {width * 0.1}
+                y = {height * 0.1}
+                onClose={() => send("MAIN")}
+            />
+        )}
         {state.value === "admin" && (
             <UserManagementModule
             width={width}
@@ -211,6 +199,7 @@ const PlayMenu = (props) => {
             height={height}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
+            userName={userName}
             mainCallback={() => send("MAIN")} // goes to Home
             conjectureSelectCallback={() => send("LEVELSELECT")}
             conjectureCallback={() => send("NEWLEVEL")}  // preview a level in the game editor
@@ -227,6 +216,7 @@ const PlayMenu = (props) => {
             width={width}
             height={height}
             mainCallback={() => send("MAIN")}
+            curricularCallback={() => send("NEWGAME")}
             gameUUID={Curriculum.getCurrentUUID()}
           />
         )}
@@ -252,6 +242,7 @@ const PlayMenu = (props) => {
             height={height}
             columnDimensions={columnDimensions}
             rowDimensions={rowDimensions}
+            userRole={userRole}
             curricularCallback={() => {
               if (!getPlayGame()) // edit game
                 send("NEWGAME");

@@ -5,37 +5,39 @@ import { white, black } from "../../utils/colors";
 import InputBox from "../InputBox";
 import RectButton from "../RectButton";
 import { blue, red, green, orange, pink, } from "../../utils/colors";
+import { sanitizeValue } from "../../utils/sanitize";
 
 // =========== HANDLER FUNCTIONS ===========
 
-function handleCurricularName(key) {
+function safeSetItem(key, val) {
+  if (val !== undefined && val !== null && val.toString().trim() !== '') {
+    localStorage.setItem(key, val);
+  } else {
+    localStorage.removeItem(key);   
+  }
+}
+function handleCurricularName(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Please name your Game:", existingValue);
   if (newValue !== null) {
-    localStorage.setItem(key, newValue);
+ safeSetItem(key, newValue);    
+ trigger();
   }
 }
-
-function handleCurricularKeywords(key) {
+function handleCurricularKeywords(key, trigger) {
   const existingValue = localStorage.getItem(key);
   const newValue = prompt("Keywords make your search easier:", existingValue);
   if (newValue !== null) {
-    localStorage.setItem(key, newValue);
+ safeSetItem(key, newValue);    
+ trigger();
   }
 }
 
-function handleCurricularAuthor(key) {
-  const existingValue = localStorage.getItem(key);
-  const newValue = prompt("Please add an Author name:", existingValue);
-  if (newValue !== null) {
-    localStorage.setItem(key, newValue);
-  }
-}
-
-function handlePinInput(key) {
+function handlePinInput(key, trigger) {
   let pin = prompt("Enter a code PIN", localStorage.getItem(key));
   if (pin && !isNaN(pin)) {
-    localStorage.setItem(key, pin);
+safeSetItem(key, pin);
+    trigger();
   } else if (pin !== null) {
     alert("PIN must be numeric.");
   }
@@ -51,32 +53,45 @@ function createInputBox(
   textKey,
   totalWidth,
   totalHeight,
-  callback
+  callback,
+  renderKey,
+  disabled = false
 ) {
-  const existingValue = localStorage.getItem(textKey) || "undefined";
-  const truncatedValue =
-    existingValue.slice(0, charLimit) +
-    (existingValue.length > charLimit ? "..." : "");
+  const raw  = localStorage.getItem(textKey);
+  const value = sanitizeValue(raw);          // always a string (may be '')
+  const isPlaceholder = value === '';
 
-  const boxHeight = totalHeight * scaleFactor;
-  const boxWidth = totalWidth * widthMultiplier;
-  const xPos = totalWidth * xMultiplier;
-  const yPos = totalHeight * yMultiplier;
+  const placeholderMap = {
+    CurricularName: 'Enter game name…',
+    CurricularAuthor: 'Author',
+    CurricularKeywords: 'keyword1, keyword2',
+    CurricularPIN: '4-digit PIN',
+  };
+
+  const text = value
+    ? value.length > charLimit
+      ? value.slice(0, charLimit) + '…'
+      : value
+    : placeholderMap[textKey] ?? '';
+
+  const height = totalHeight * scaleFactor;
+  const width = totalWidth * widthMultiplier;
+  const x = totalWidth * xMultiplier;
+  const y = totalHeight * yMultiplier;
 
   return (
     <InputBox
-      key={textKey}
-      height={boxHeight}
-      width={boxWidth}
-      x={xPos}
-      y={yPos}
-      color={white}
+      key={`${textKey}-${renderKey}`}
+      height={height}
+      width={width}
+      x={x}
+      y={y}
+      color={disabled ? blue : white}
       fontSize={totalWidth * 0.012}
-      fontColor={black}
-      text={truncatedValue}
-      fontWeight={500}
-      outlineColor={black}
-      callback={() => callback(textKey)}
+      fontColor={disabled ? white : (isPlaceholder ? '#888' : black)}
+      text={text}
+      fontWeight={disabled ? 1000 : 500}
+      callback={disabled ? null : () => callback(textKey)}
     />
   );
 }
@@ -210,6 +225,10 @@ export const StoryEditorContentEditor = (props) => {
   const { height, width, conjectureCallback, dialogues, onMoveUp, onMoveDown, 
           onAddDialogue, onRemoveDialogue, onEditDialogue, onChangeType, idToSprite,
           onChangeCharacter, chapters, onChangeChapter,} = props;
+
+ // force rerender key (same pattern as CurricularModuleBoxes)
+  const [renderKey, setRenderKey] = useState(0);
+  const triggerRerender = () => setRenderKey(prev => prev + 1);
   
   //Local state to track which row is open for Character
   const [openDropdownIndex, setOpenDropdownIndex] = useState(-1);
@@ -219,6 +238,9 @@ export const StoryEditorContentEditor = (props) => {
 
   //Array of all sprite keys
   const allSprites = Object.keys(idToSprite);
+
+  const characterDropdowns = [];
+  const chapterDropdowns = [];
   
   return (
     <>
@@ -231,7 +253,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularName",
         width,
         height,
-        handleCurricularName
+        (key) => handleCurricularName(key, triggerRerender),
+        renderKey
       )}
       {createInputBox(
         180,
@@ -242,7 +265,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularKeywords",
         width,
         height,
-        handleCurricularKeywords
+        (key) => handleCurricularKeywords(key, triggerRerender),
+        renderKey
       )}
       {createInputBox(
         220,
@@ -253,7 +277,9 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularAuthor",
         width,
         height,
-        handleCurricularAuthor
+        null,
+        renderKey,
+        true
       )}
       {createInputBox(
         4,
@@ -264,8 +290,8 @@ export const StoryEditorContentEditor = (props) => {
         "CurricularPIN",
         width,
         height,
-        handlePinInput
-      )}
+        (key) => handlePinInput(key, triggerRerender),
+        renderKey      )}
 
       {/* For the text input boxes */}
       {createTextElement("Story Editor", 0.43, 0.03, 0.025, width, height)}
@@ -273,6 +299,9 @@ export const StoryEditorContentEditor = (props) => {
       {createTextElement("Pin:", 0.69, 0.17, 0.018, width, height)}
       {createTextElement("Author:", 0.48, 0.105, 0.018, width, height)}
       {createTextElement("Game Name:", 0.11, 0.10, 0.018, width, height)}
+
+      
+      {createTextElement(`Total chapters: ${chapters.length}`, 0.04, 0.24, 0.018, width, height)}
 
       {/* To label the narritives */}
       {createTextElement("Chapter", 0.04, 0.32, 0.015, width, height)}
@@ -339,26 +368,19 @@ export const StoryEditorContentEditor = (props) => {
               <React.Fragment>
                 {allSprites.map((charID, spriteIdx) => {
                   // For each possible character, render a small button
-                  return (
+                  characterDropdowns.push(
                     <RectButton
-                      key={charID}
+                      key={`char-${index}-${charID}`}
                       height={height * 0.1}
                       width={width * .365}
                       x={width * 0.0945}
-                      y={
-                        // place each item below the "Character" button
-                        // e.g. rowY + spriteIdx * (some vertical spacing)
-                        (height * rowY) +
-                        (spriteIdx + 1) * (height * 0.04)
-                      }
+                      y={(height * rowY) + (spriteIdx + 1) * (height * 0.04)}
                       color={white}
                       fontSize={width * 0.012}
                       fontColor={0x000000}
                       text={charID}
                       callback={() => {
-                        // Call parent handler to update the character
                         onChangeCharacter(index, charID);
-                        // Close dropdown
                         setOpenDropdownIndex(-1);
                       }}
                     />
@@ -392,9 +414,9 @@ export const StoryEditorContentEditor = (props) => {
               <React.Fragment>
                 {chapters.map((chVal, chIdx) => {
                   // chVal is numberic, e.g. 1, 2, 3
-                  return (
+                  chapterDropdowns.push(
                     <RectButton
-                      key={chVal}
+                      key={`chapter-${index}-${chVal}`}
                       height={height * 0.1}
                       width={width * 0.1}
                       x={width * 0.05}
@@ -436,7 +458,7 @@ export const StoryEditorContentEditor = (props) => {
             fontColor={white}
             text={"Edit"}
             fontWeight={800}
-            callback={null}
+            callback={() => onEditDialogue(index)}
           />
           <RectButton
               height={height * 0.1}
@@ -465,6 +487,8 @@ export const StoryEditorContentEditor = (props) => {
           </React.Fragment>
         );
       })}
+      {characterDropdowns}
+      {chapterDropdowns}
     </>
   );
 };

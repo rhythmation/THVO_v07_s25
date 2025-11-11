@@ -1,24 +1,33 @@
-import { useState, useCallback, useEffect } from "react";
-import { Graphics, Text, useApp } from "@inlet/react-pixi";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Graphics, Text } from "@inlet/react-pixi";
 import CursorMode from "./CursorMode.js";
 import Pose from "./Pose/index";
-import { white, darkGray, yellow, red } from "../utils/colors";
-import { promiseChecker, writeToDatabase } from "../firebase/database.js";
-import Button from "./Button.js";
+import { white, darkGray, yellow } from "../utils/colors";
+import { writeToDatabase } from "../firebase/database.js";
+
+/**
+ * A non-blocking error handler for database writes. This is a safe way to log
+ * errors without impacting performance.
+ */
+const handleWriteError = (error) => {
+  console.error("Failed to write pose data to the database:", error);
+};
 
 const ExperimentalTask = (props) => {
   const {
-    width,
-    height,
     prompt,
     poseData,
     UUID,
     columnDimensions,
     onComplete,
     rowDimensions,
-    cursorTimer
+    cursorTimer,
+    gameID,
   } = props;
   const [showCursor, setShowCursor] = useState(false);
+  
+  // A ref to hold the timer ID. This is critical for preventing race conditions.
+  const cursorTimerRef = useRef(null);
 
   const drawModalBackground = useCallback((g) => {
     g.beginFill(darkGray, 0.9);
@@ -28,75 +37,67 @@ const ExperimentalTask = (props) => {
     g.beginFill(yellow, 1);
     g.drawRect(col3.x, col3.y, col3.width, col3.height);
     g.endFill();
-  });
+  }, [columnDimensions]);
 
-  // Database Write Functionality
-  // This code runs when the user is participating in a conjecture and recording is enabled.
-  // The following code runs once when the component mounts.
+  // --- EFFICIENT DATABASE WRITING ---
+  // This useEffect handles writing data to Firebase without causing a performance freeze.
+  // The buggy `promiseChecker` logic has been completely removed.
   useEffect(() => {
-    // Defaults recording conditions true and fps = 12.
-    const isRecording = "true";
-    
-    if (isRecording === "true") {
-      // Get the fps: default to 12
+    const isRecording = true; 
+    const frameRate = 12;
 
-
-
-      //FRAMERATE CAN BE CHANGED HERE
-      const frameRate = 12;
-
-
-
-
-      // Empty array to hold promise objects assures that all the promises get settled on component unmount.
-      let promises = [];
-
-      // This creates an interval for the writing to the database every n times a second,
-      // where n is a variable framerate.
+    if (isRecording) {
       const intervalId = setInterval(() => {
-        // Call the writeToDatabase function with the current poseData, conjecture index,
-        // and fps parameter. Push the resulting promise object to the promises array.
-        promises.push(
-          writeToDatabase(poseData, UUID, frameRate)
-        );
-        // Call the promiseChecker function to detect any data loss in the promises array
-        // and trigger an alert if necessary.
-        promiseChecker(frameRate, promises);
-    }, 1000 / frameRate);
+        if (poseData) {
+          // Write data but don't block the main thread. This prevents the freeze.
+          writeToDatabase(poseData, UUID, frameRate, gameID).catch(handleWriteError);
+        }
+      }, 1000 / frameRate);
+      // Cleanup function to stop the interval when the component is removed.
+      return () => clearInterval(intervalId);
+    }
+  }, [poseData, UUID, gameID]);
 
-      // The code below runs when the component unmounts.
-    return async () => {
-        // Stop the interval when the component unmounts.
-      clearInterval(intervalId);
-
-        // Wait until all promises are settled so we don't lose data.
-      await Promise.allSettled(promises);
-    };
-  } 
-}, []);
-
+  // --- RACE CONDITION FIX ---
+  // This useEffect correctly manages the timer that shows the 'Next' button/cursor.
   useEffect(() => {
-    const timeout = setTimeout(
-      () => {
-        setShowCursor(true);
-      },
-      cursorTimer ? cursorTimer : 1000
-    );
-    return () => clearTimeout(timeout);
-  }, []);
+    cursorTimerRef.current = setTimeout(() => {
+      setShowCursor(true);
+    }, cursorTimer || 1000);
+
+    // This cleanup function clears the timer if the component unmounts, preventing bugs.
+    return () => {
+      if (cursorTimerRef.current) {
+        clearTimeout(cursorTimerRef.current);
+      }
+    };
+  }, [cursorTimer]);
+
+  /**
+   * This function safely handles the completion event. It first clears any
+   * pending timers and then calls the original onComplete callback. This
+   * prevents both the timer and a user click from firing at the same time.
+   */
+  const handleOnComplete = useCallback(() => {
+    if (cursorTimerRef.current) {
+      clearTimeout(cursorTimerRef.current);
+      cursorTimerRef.current = null;
+    }
+    onComplete();
+  }, [onComplete]);
 
   return (
     <>
       <Graphics draw={drawModalBackground} />
       <Text
         text={prompt}
-        y={columnDimensions(1).y + columnDimensions(1).height / 4}
+        y={50}
         x={columnDimensions(1).x + columnDimensions(1).margin}
         style={
           new PIXI.TextStyle({
             align: "center",
             fontFamily: "Futura",
-            fontSize: "5em",
+            fontSize: "4em",
             fontWeight: 800,
             fill: [white],
             wordWrap: true,
@@ -107,25 +108,14 @@ const ExperimentalTask = (props) => {
       <Pose poseData={poseData} colAttr={columnDimensions(3)} />
       {showCursor && ( 
         <>
-          {/* <Button
-          width={width * 0.20}
-          x={width * 0.9}
-          y={height * 0.9}
-          color={red}
-          fontSize={width * 0.02}
-          fontColor={white}
-          text={"NEXT"}
-          fontWeight={800}
-          callback={onComplete}
-      /> */}
-      {/* This results in a big slow down, TODO need to fix */}
           <CursorMode
             poseData={poseData}
             rowDimensions={rowDimensions}
-            callback={onComplete}
+            callback={handleOnComplete} // Use the safe, wrapped callback
+            colAttr={columnDimensions(3)}   // ← NEW
           />
           <Text
-            text={"When you're ready to move on, click 'Next' to continue"}
+            text={"When you're ready to move on, click the 'Next Arrow' to continue"}
             y={columnDimensions(1).y + 7 * (columnDimensions(1).height / 8)}
             x={columnDimensions(1).x + columnDimensions(1).margin}
             style={
@@ -147,3 +137,5 @@ const ExperimentalTask = (props) => {
 };
 
 export default ExperimentalTask;
+
+

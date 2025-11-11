@@ -1,8 +1,8 @@
 import { Container, Graphics } from "@inlet/react-pixi";
-import { useCallback } from "react";
+import { useCallback, memo } from "react";
 import { blue } from "../utils/colors";
 
-const Background = (props) => {
+const Background = memo((props) => {
   // props.height expects the full height of the stage
   const backgroundHeight = props.height * 0.55;
   // create background design drawing a horizontal line across the top of the Container
@@ -44,6 +44,6 @@ const Background = (props) => {
       <Graphics draw={draw} />
     </Container>
   );
-};
+});
 
 export default Background;

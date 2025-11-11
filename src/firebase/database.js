@@ -1,5 +1,5 @@
 // Firebase Init
-import { ref, push, getDatabase, set, query, equalTo, get, orderByChild, orderByKey, onValue, child, startAt, endAt, remove } from "firebase/database";
+import { ref, push, getDatabase, set, query, equalTo, get, orderByChild, orderByKey, onValue, child, startAt, endAt, remove, update } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 import { Curriculum } from "../components/CurricularModule/CurricularModule";
@@ -24,6 +24,27 @@ let date;
 let readableDate;
 let loginTime;
 
+// --- Device identity (minimal) ---
+let deviceId, deviceNickname, deviceSlug;
+const sanitize = (s) => (s || "").toString().replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 64);
+
+const ensureDeviceIdentity = () => {
+  let id = localStorage.getItem("thvo_device_id");
+  if (!id) {
+    id = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : uuidv4();
+    localStorage.setItem("thvo_device_id", id);
+  }
+  let nick = localStorage.getItem("thvo_device_nickname");
+  if (!nick || !nick.trim()) {
+    const plat = navigator?.userAgentData?.platform || navigator?.platform || "device";
+    nick = sanitize(plat);
+    localStorage.setItem("thvo_device_nickname", nick);
+  }
+  deviceId = id;
+  deviceNickname = nick;
+  deviceSlug = sanitize(`${nick}-${id.substring(0, 8)}`);
+};
+
 // Declare variables that change on game state change
 let eventType;
 let gameId;
@@ -38,6 +59,9 @@ onAuthStateChanged(auth, (user) => {
   date = new Date();
   loginTime = date.toUTCString();
   readableDate = formatDate(date);
+
+  // NEW: ensure we have a stable per-device identity
+  ensureDeviceIdentity();
 });
 
 // Function to Format date into readable format
@@ -78,7 +102,7 @@ export const curricularTextBoxes = [
 ]
 
 // Export a function named writeToDatabase, allows constant pose data upload
-export const writeToDatabase = async (poseData, UUID, frameRate) => {
+export const writeToDatabase = async (poseData, UUID, frameRate, gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -88,13 +112,16 @@ export const writeToDatabase = async (poseData, UUID, frameRate) => {
 
   // only runs if event type is established
   if(eventType !== null){
-    const dbRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName+" "+loginTime}/${UUID}/${eventType}`);
+    // UPDATED: include device layer + separate loginTime dir
+    const dbRef = ref(db, `_PoseData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${UUID}/${eventType}`);
 
-  // Create an object to send to the database
-  // This object includes the userId, poseData, conjectureId, frameRate, and timestamp and
+    // Create an object to send to the database
+    // This object includes the userId, poseData, conjectureId, frameRate, and timestamp and
     const dataToSend = {
       userId,
       userName,
+      deviceId,          // NEW
+      deviceNickname,    // NEW
       poseData: JSON.stringify(poseData),
       eventType,
       timestamp,
@@ -148,179 +175,253 @@ export const writeToDatabasePoseAuth = async (poseData, state, tolerance) => {
 };
 
 export const writeToDatabaseConjecture = async (existingUUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-  let conjectureID;
+  try {
+    const dateObj = new Date();
+    const timestamp = dateObj.toISOString();
+    const conjectureID = existingUUID ?? uuidv4();
 
-  // define the UUID based on whether it exists already or not
-  if(existingUUID == null){
-    conjectureID = uuidv4();
-  }
-  else{
-    conjectureID = existingUUID;
-  }
-  
+    const dataToPush = {};
 
-  // Initialize empty object to store the data inside
-  const dataToPush = {};
+    const isAnyKeyNullOrUndefined = keysToPush.some((key) => {
+      const value = localStorage.getItem(key);
+      return value === null || value === undefined || value.trim() === '';
+    });
 
-  // Fetch values from local storage for each key inside keysToPush 
-  const isAnyKeyNullOrUndefined = keysToPush.some((key) => {
-    const value = localStorage.getItem(key);
-    return value === null || value === undefined || value.trim() === '';
-  });
+    if (isAnyKeyNullOrUndefined) {
+      alert("One or more text values are empty. Cannot publish conjecture to database.");
+      return false;
+    }
 
-  // if any text values are not there alert message and exit
-  if (isAnyKeyNullOrUndefined) {
-    return alert("One or more text values are empty. Cannot publish conjecture to database."), false;
-  }
+    const startJson = localStorage.getItem('start.json');
+    const intermediateJson = localStorage.getItem('intermediate.json');
+    const endJson = localStorage.getItem('end.json');
 
-  // Check if any of the pose data is null before proceeding
-  const startJson = localStorage.getItem('start.json');
-  const intermediateJson = localStorage.getItem('intermediate.json');
-  const endJson = localStorage.getItem('end.json');
+    if (!startJson || !intermediateJson || !endJson) {
+      alert("One or more poses are missing. Cannot publish conjecture to database.");
+      return false;
+    }
 
-  if (
-    startJson !== null && startJson !== undefined &&
-    intermediateJson !== null && intermediateJson !== undefined &&
-    endJson !== null && endJson !== undefined
-  ) {
-    // create pose objects
+    // Create pose objects
     const startPoseData = await createPoseObjects(startJson, 'StartPose', localStorage.getItem('Start Tolerance'));
     const intermediatePoseData = await createPoseObjects(intermediateJson, 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
     const endPoseData = await createPoseObjects(endJson, 'EndPose', localStorage.getItem('End Tolerance'));
 
-    // Define the database path
-    const conjecturePath = `Level/${conjectureID}`;
-
-    // Fetch values from local storage for each key inside keysToPush 
+    // Populate dataToPush with text boxes
     await Promise.all(keysToPush.map(async (key) => {
       const value = localStorage.getItem(key);
-
-      // Check if the value is not null, undefined, or an empty string
-      if (value !== null && value !== undefined && value.trim() !== '') {
-        // uses helper function to create text objects
+      if (value && value.trim() !== '') {
         Object.assign(dataToPush, await createTextObjects(key, value));
       }
     }));
 
-
-    // searrcxh words
+    // Prepare search words
     const searchWordsToPush = {
       "Author Name": dataToPush["Author Name"],
       "Conjecture Description": dataToPush["Conjecture Description"],
       "Conjecture Keywords": dataToPush["Conjecture Keywords"],
       "Conjecture Name": dataToPush["Conjecture Name"]
     };
-    console.log(searchWordsToPush)
 
-    // Extracting values from searchWordsToPush object
-    const searchWordsValues = Object.values(searchWordsToPush);
-    // Concatenating search words into a single lowercase string
-    const concatenatedSearchWords = searchWordsValues.join(" ").toLowerCase();
-
-    // Splitting the concatenated string into individual words
+    const concatenatedSearchWords = Object.values(searchWordsToPush).join(" ").toLowerCase();
     const wordsArray = concatenatedSearchWords.split(" ");
-
-    // Initializing an empty object to store search words
     const searchWordsToPushToDatabase = {};
 
-    // Loop through the words array and set each word as a key in the searchWordsToPushToDatabase object with the word itself as its value
     wordsArray.forEach(word => {
-      if (word !== undefined) {
-        searchWordsToPushToDatabase[word] = word;
-      }
+      const cleanWord = word.replace(/[.#$/\[\]/]/g, '');
+      if (cleanWord) searchWordsToPushToDatabase[cleanWord] = cleanWord;
     });
 
-    console.log(searchWordsToPushToDatabase)
+    // Firebase path
+    const conjecturePath = `Level/${conjectureID}`;
 
-    // creates promises to push all of the data to the database 
-    // uses set to overwrite the random firebaseKeys with easier to read key names
+    // Push to Firebase
     const promises = [
       set(ref(db, `${conjecturePath}/Time`), timestamp),
       set(ref(db, `${conjecturePath}/AuthorID`), userId),
-      set(ref(db, `${conjecturePath}/UUID`),conjectureID),
+      set(ref(db, `${conjecturePath}/UUID`), conjectureID),
       set(ref(db, `${conjecturePath}/PIN`), localStorage.getItem("PIN")),
       set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
       set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
       set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
       set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
-      set(ref(db, `${conjecturePath}/isFinal`), true),
-      set(ref(db,`${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
+      set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
       set(ref(db, `${conjecturePath}/Name`), dataToPush["Conjecture Name"]),
-      // auto set author to logged in user
-      //set(ref(db, `${conjecturePath}/Author`), userName),
+      set(ref(db, `${conjecturePath}/Start Tolerance`), localStorage.getItem('Start Tolerance')),
+      set(ref(db, `${conjecturePath}/Intermediate Tolerance`), localStorage.getItem('Intermediate Tolerance')),
+      set(ref(db, `${conjecturePath}/End Tolerance`), localStorage.getItem('End Tolerance')),
+      set(ref(db, `${conjecturePath}/isFinal`), true)
     ];
 
-    return promises && alert("Conjecture successfully published to database.");
-  } else {
-    return alert("One or more poses are missing. Cannot publish conjecture to database."), false;
+    await Promise.all(promises);
+    alert("Conjecture successfully published to database.");
+    return true;
+
+  } catch (error) {
+    console.error("Error writing conjecture to database:", error);
+    alert("An unexpected error occurred. Could not publish conjecture.");
+    return false;
   }
 };
+
 
 // save a draft of the current conjecture so it can be published later
 export const writeToDatabaseConjectureDraft = async (existingUUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-  let conjectureID;
+  try {
+    const dateObj = new Date();
+    const timestamp = dateObj.toISOString();
+    const conjectureID = existingUUID ?? uuidv4();
 
-  // define the UUID based on whether it exists already or not
-  if(existingUUID == null){
-    conjectureID = uuidv4();
-  }
-  else{
-    conjectureID = existingUUID;
-  }
+    const dataToPush = {};
+    let noName = false;
 
-  // Initialize empty object to store the data inside
-  const dataToPush = {};
-  let noName = false;
+    // Process text box values
+    await Promise.all(keysToPush.map(async (key) => {
+      const value = localStorage.getItem(key);
 
-  // Fetch values from local storage for each key inside KeysToPush 
-  await Promise.all(keysToPush.map(async (key) => {
-    const value = localStorage.getItem(key);
-    Object.assign(dataToPush, await createTextObjects(key, value));
+      // If the value is undefined or empty, save it as "undefined" and flag noName if needed
+      const sanitizedValue = value === undefined || value === null || value.trim() === '' ? "undefined" : value;
 
-    // If the value is undefined assign the value as undefined in firebase
-    if(value == undefined){
-      Object.assign(dataToPush, await createTextObjects(key, "undefined"));
-      if(key == "Conjecture Name"){
+      Object.assign(dataToPush, await createTextObjects(key, sanitizedValue));
+
+      if (key === "Conjecture Name" && sanitizedValue === "undefined") {
         noName = true;
       }
+    }));
+
+    if (noName) {
+      alert("Please name your level before saving a draft.");
+      return false;
     }
-  }));
 
-  // create pose objects
-  const startPoseData = await createPoseObjects(localStorage.getItem('start.json'), 'StartPose', localStorage.getItem('Start Tolerance'));
-  const intermediatePoseData = await createPoseObjects(localStorage.getItem('intermediate.json'), 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
-  const endPoseData = await createPoseObjects(localStorage.getItem('end.json'), 'EndPose', localStorage.getItem('End Tolerance'));
+    // Prepare search words
+    const searchWordsToPush = {
+      "Author Name": dataToPush["Author Name"],
+      "Conjecture Description": dataToPush["Conjecture Description"],
+      "Conjecture Keywords": dataToPush["Conjecture Keywords"],
+      "Conjecture Name": dataToPush["Conjecture Name"]
+    };
 
-  // if the level isn't named, alert message and exit
-  if (noName) {
-    return alert("Please name your level before saving a draft."), false;
+    const concatenatedSearchWords = Object.values(searchWordsToPush).join(" ").toLowerCase();
+    const wordsArray = concatenatedSearchWords.split(" ");
+    const searchWordsToPushToDatabase = {};
+
+    wordsArray.forEach(word => {
+      const cleanWord = word.replace(/[.#$/\[\]/]/g, '');
+      if (cleanWord) searchWordsToPushToDatabase[cleanWord] = cleanWord;
+    });
+
+    // Create pose data
+    const startJson = localStorage.getItem('start.json');
+    const intermediateJson = localStorage.getItem('intermediate.json');
+    const endJson = localStorage.getItem('end.json');
+
+    const startPoseData = await createPoseObjects(startJson, 'StartPose', localStorage.getItem('Start Tolerance'));
+    const intermediatePoseData = await createPoseObjects(intermediateJson, 'IntermediatePose', localStorage.getItem('Intermediate Tolerance'));
+    const endPoseData = await createPoseObjects(endJson, 'EndPose', localStorage.getItem('End Tolerance'));
+
+    // Firebase path
+    const conjecturePath = `Level/${conjectureID}`;
+
+    const promises = [
+      set(ref(db, `${conjecturePath}/Time`), timestamp),
+      set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
+      set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
+      set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
+      set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
+      set(ref(db, `${conjecturePath}/Search Words`), searchWordsToPushToDatabase),
+      set(ref(db, `${conjecturePath}/UUID`), conjectureID),
+      set(ref(db, `${conjecturePath}/Start Tolerance`), localStorage.getItem('Start Tolerance')),
+      set(ref(db, `${conjecturePath}/Intermediate Tolerance`), localStorage.getItem('Intermediate Tolerance')),
+      set(ref(db, `${conjecturePath}/End Tolerance`), localStorage.getItem('End Tolerance')),
+      set(ref(db, `${conjecturePath}/isFinal`), false)
+    ];
+
+    await Promise.all(promises);
+    alert("Draft saved.");
+    return true;
+
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    alert("An unexpected error occurred. Draft not saved.");
+    return false;
   }
-
-  // Define the database path
-  const conjecturePath = `Level/${conjectureID}`;
-
-  // creates promises to push all of the data to the database 
-  // uses set to overwrite the random firebaseKeys with easier to read key names
-  const promises = [
-    set(ref(db, `${conjecturePath}/Time`), timestamp),
-    set(ref(db, `${conjecturePath}/Start Pose`), startPoseData),
-    set(ref(db, `${conjecturePath}/Intermediate Pose`), intermediatePoseData),
-    set(ref(db, `${conjecturePath}/End Pose`), endPoseData),
-    set(ref(db, `${conjecturePath}/Text Boxes`), dataToPush),
-    set(ref(db, `${conjecturePath}/UUID`),conjectureID),
-    set(ref(db, `${conjecturePath}/isFinal`), false),
-    // auto set author to logged in user
-    //set(ref(db, `${conjecturePath}/Author`), userName)
-  ];
-
-  return promises && alert("Draft saved");
 };
+
+
+
+export const deleteFromDatabaseConjecture = async (existingUUID) => {
+  if (!existingUUID) {
+    return alert("No level ID provided for deletion.");
+  }
+  
+  try {
+    // First, remove the level from any curricular games that reference it
+    await removeLevelFromCurricularGames(existingUUID);
+    
+    // Then, remove the level itself from the database
+    const conjecturePath = `Level/${existingUUID}`;
+    const dbRef = ref(db, conjecturePath);
+    
+    // Remove the entire level from database
+    await remove(dbRef);
+
+    return alert("Level deleted successfully and removed from all games.");
+  } catch (error) {
+    console.error('Error deleting level:', error);
+    return alert("Error deleting level. Please try again.");
+  }
+};
+
+// Helper function to remove a level from all curricular games that reference it
+const removeLevelFromCurricularGames = async (levelUUID) => {
+  try {
+    // Get all games from the database
+    const gamesRef = ref(db, 'Game');
+    const gamesSnapshot = await get(gamesRef);
+    
+    if (!gamesSnapshot.exists()) {
+      console.log("No games found in database");
+      return;
+    }
+    
+    const games = gamesSnapshot.val();
+    const updatePromises = [];
+    
+    // Iterate through all games to find ones that reference the level
+    for (const gameKey in games) {
+      const game = games[gameKey];
+      
+      // Check if this game has ConjectureUUIDs and if it contains the level we're deleting
+      if (game.ConjectureUUIDs && Array.isArray(game.ConjectureUUIDs)) {
+        const levelIndex = game.ConjectureUUIDs.indexOf(levelUUID);
+        
+        if (levelIndex !== -1) {
+          // Remove the level UUID from the array
+          const updatedConjectureUUIDs = game.ConjectureUUIDs.filter(uuid => uuid !== levelUUID);
+          
+          // Update the game in the database
+          const gameRef = ref(db, `Game/${gameKey}/ConjectureUUIDs`);
+          updatePromises.push(set(gameRef, updatedConjectureUUIDs));
+          
+          console.log(`Removed level ${levelUUID} from game ${game.CurricularName || gameKey}`);
+        }
+      }
+    }
+    
+    // Execute all updates
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      console.log(`Level ${levelUUID} removed from ${updatePromises.length} games`);
+    } else {
+      console.log(`Level ${levelUUID} was not referenced in any games`);
+    }
+    
+  } catch (error) {
+    console.error('Error removing level from curricular games:', error);
+    throw error;
+  }
+};
+
 
 // Helper function to create pose objects for the writeToDatabaseConjecture function 
 const createPoseObjects = async (poseData, state, tolerance) => {
@@ -414,135 +515,123 @@ const countRejectedPromises = async (promises) => {
   return rejectedCount;
 };
 
+  /**
+   * @function handleSave
+   * @description Saves the current game as a draft or publishes it.
+   * It performs a check to ensure the game name is unique before saving.
+   * @param {string|null} UUID - The unique identifier for the game. If null, a new UUID will be generated.
+   * @param {boolean} isFinal - True to publish, false to save as a draft.
+   * @returns {Promise<boolean>} - Returns true if the save was successful, false otherwise.
+   * Files using this function: CurricularModule.js
+   * TODO: Add a last edited by field
+   */
+  export const saveGame = async (UUID = null, isFinal = false) => {
+    const db = getDatabase();
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-// save a draft of a collection of conjectures to be published later
-export const writeToDatabaseCurricularDraft = async (UUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-
-  let CurricularID; // set the UUID based on whether creating new game or editing existing game
-  if(UUID == null){
-    CurricularID = uuidv4();
-  }
-  else{
-    CurricularID = UUID;
-  }
-
-  //get the UUID of each conjecture
-  const conjectureList = Curriculum.getCurrentConjectures();
-  let conjectures = [];
-  for (let i = 0; i < conjectureList.length; i++){
-    conjectures.push(conjectureList[i]["UUID"]);
-  }
-
-  const dataToPush = {}
-  // Fetch values from local storage for each key inside  curricularTextBoxes
-  await Promise.all(curricularTextBoxes.map(async (key) => {
-    const value = localStorage.getItem(key);
-    Object.assign(dataToPush, await createTextObjects(key, value));
-
-    // If the value is undefined assign the value as undefined in firebase
-    if(value == undefined){
-      Object.assign(dataToPush, await createTextObjects(key, "undefined"));
+    if (!user) {
+      alert("You must be logged in to save a game.");
+      return false;
     }
-  }));
 
-  //if no name: alert message and exit
-  if (dataToPush.CurricularName == undefined) {
-    return alert("Please name the game first.");
+    const gameName = localStorage.getItem('CurricularName');
+    const currentUUID = UUID || uuidv4();
+
+    if (!gameName || gameName.trim() === "") {
+      alert("Please enter a game name before saving.");
+      return false;
+    }
+
+    const gameNameKey = gameName.trim();
+
+    // --- START: UNIQUE NAME VALIDATION ---
+    const gameNamesRef = ref(db, `gameNames/${gameNameKey}`);
+    const snapshot = await get(gameNamesRef);
+
+    if (snapshot.exists() && snapshot.val() !== currentUUID) {
+      alert("This game name is already taken. Please choose a different name.");
+      return false;
+    }
+    // --- END: UNIQUE NAME VALIDATION ---
+
+    // --- START: VALIDATION FOR PUBLISHING ---
+    if (isFinal) {
+      const missingFields = curricularTextBoxes.filter((key) => {
+        const val = localStorage.getItem(key);
+        return val == null || val.trim() === "";
+      });
+
+      if (missingFields.length > 0) {
+        alert("One or more text fields are empty. Please fill out all required fields before publishing.");
+        return false;
+      }
+
+      const conjectures = Curriculum.getCurrentConjectures();
+      if (!conjectures || conjectures.length === 0) {
+        alert("Please add at least one level (conjecture) to your game before publishing.");
+        return false;
+      }
+    }
+    // --- END: VALIDATION FOR PUBLISHING ---
+
+    // Proceed with saving the game
+    try {
+      const conjectureUUIDs = Curriculum.getCurrentConjectures().map(c => c.UUID);
+      const existingDialogues = await loadGameDialoguesFromFirebase(currentUUID) || [];
+      const userId = user.uid;
+      const userName = user.email.split('@')[0];
+
+      const gameData = {
+        CurricularName: gameName,
+        CurricularAuthor: localStorage.getItem('CurricularAuthor') || "Unknown",
+        CurricularKeywords: localStorage.getItem('CurricularKeywords') || "",
+        CurricularPIN: localStorage.getItem('CurricularPIN') || "",
+        ConjectureUUIDs: conjectureUUIDs,
+        isFinal: isFinal,
+        UUID: currentUUID,
+        Time: new Date().toISOString(),
+        Author: userName,
+        AuthorID: userId,
+        Dialogues: existingDialogues
+      };
+
+      const updates = {};
+      updates[`/Game/${currentUUID}`] = gameData;
+      updates[`/gameNames/${gameNameKey}`] = currentUUID;
+
+      await update(ref(db), updates);
+
+      alert(`Game ${isFinal ? "published" : "saved as draft"} successfully!`);
+      Curriculum.setCurrentUUID(currentUUID);
+      return true;
+
+    } catch (error) {
+      console.error("Error saving game:", error);
+      alert("An error occurred while saving the game. Please see the console for details.");
+      return false;
+    }
+};
+
+export const deleteFromDatabaseCurricular = async (UUID) => {
+  if (!UUID) {
+    return alert("No game ID provided for deletion.");
   }
 
-  const CurricularPath = `Game/${CurricularID}`;
-
-  // creates promises to push all of the data to the database 
-  // uses set to overwrite the random firebaseKeys with easier to read key names
-  const promises = [
-    set(ref(db, `${CurricularPath}`), dataToPush),
-    set(ref(db, `${CurricularPath}/ConjectureUUIDs`), conjectures),
-    set(ref(db, `${CurricularPath}/Time`), timestamp),
-    set(ref(db, `${CurricularPath}/UUID`), CurricularID),
-    set(ref(db, `${CurricularPath}/isFinal`), false),
-    // auto set author for security
-    set(ref(db, `${CurricularPath}/Author`), userName),
-    set(ref(db, `${CurricularPath}/AuthorID`), userId),
-  ];
-
-  return promises && alert("Game Draft saved");
-}
-
-
-// publish a completed game
-export const writeToDatabaseCurricular = async (UUID) => {
-  // Create a new date object to get a timestamp
-  const dateObj = new Date();
-  const timestamp = dateObj.toISOString();
-
-  let CurricularID; // set the UUID based on whether creating new game or editing existing game
-  if(UUID == null){
-    CurricularID = uuidv4();
-  }
-  else{
-    CurricularID = UUID;
-  }
-
-  // First, load any existing dialogues to preserve them
-  let existingDialogues = [];
   try {
-    existingDialogues = await loadGameDialoguesFromFirebase(CurricularID) || [];
-    console.log("Preserving existing dialogues:", existingDialogues.length);
+    const CurricularPath = `Game/${UUID}`;
+    const dbRef = ref(db, CurricularPath);
+    
+    // Remove the entire game from database
+    await remove(dbRef);
+    
+    return alert("Game deleted successfully.");
   } catch (error) {
-    console.warn("No existing dialogues found or error loading dialogues:", error);
+    console.error('Error deleting game:', error);
+    return alert("Error deleting game. Please try again.");
   }
+};
 
-  //get the UUID of each conjecture
-  const conjectureList = Curriculum.getCurrentConjectures();
-  let conjectures = [];
-  for (let i = 0; i < conjectureList.length; i++){
-    conjectures.push(conjectureList[i]["UUID"]);
-  }
-
-  const dataToPush = {}
-  let hasUndefined = false;
-  // Fetch values from local storage for each key inside curricularTextBoxes
-  await Promise.all(curricularTextBoxes.map(async (key) => {
-    const value = localStorage.getItem(key);
-    Object.assign(dataToPush, await createTextObjects(key, value));
-
-    // If the value is undefined assign the value as undefined in firebase
-    if(value == undefined){
-      Object.assign(dataToPush, await createTextObjects(key, "undefined"));
-      hasUndefined = true;
-    }
-  }));
-
-  // if anything is missing return an alert and exit
-  if(hasUndefined){
-    //alert("One or more text values are empty. Cannot publish game to database.");
-    return alert("One or more text values are empty. Cannot publish game to database.");
-  }
-  if(conjectureList.length == 0){
-    return alert("Please add at least 1 level to your game before publishing.");
-  }
-
-  const CurricularPath = `Game/${CurricularID}`;
-
-  // creates promises to push all of the data to the database 
-  // uses set to overwrite the random firebaseKeys with easier to read key names
-  const promises = [
-    set(ref(db, `${CurricularPath}`), dataToPush),
-    set(ref(db, `${CurricularPath}/ConjectureUUIDs`), conjectures),
-    set(ref(db, `${CurricularPath}/Time`), timestamp),
-    set(ref(db, `${CurricularPath}/UUID`), CurricularID),
-    set(ref(db, `${CurricularPath}/isFinal`), true),
-    set(ref(db, `${CurricularPath}/Author`), userName),
-    set(ref(db, `${CurricularPath}/AuthorID`), userId),
-    // CRITICAL: Preserve dialogues when publishing
-    set(ref(db, `${CurricularPath}/Dialogues`), existingDialogues),
-  ];
-
-  return alert("Game Published"), promises; //returns the promises and alerts that the game has been published
-}
 
 // save dialogues to firebase
 export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
@@ -554,14 +643,13 @@ export const saveNarrativeDraftToFirebase = async (UUID, dialogues) => {
     set(ref(db, `Game/${gameId}/Dialogues`), dialogues),
     set(ref(db, `Game/${gameId}/LastSaved`), timestamp),
     set(ref(db, `Game/${gameId}/UUID`), gameId),
-    set(ref(db, `Game/${gameId}/isFinal`), false),
+    //set(ref(db, `Game/${gameId}/isFinal`), false),   DONT MODIFY THE ORIGINAL VALUE
     // Optional: auto-set author again for traceability
     set(ref(db, `Game/${gameId}/AuthorID`), userId),
     set(ref(db, `Game/${gameId}/Author`), userName),
   ];
 
   await Promise.all(promises);
-  alert("Narrative draft saved.");
 };
 
 
@@ -749,13 +837,24 @@ export const searchConjecturesByWord = async (searchWord) => {
     const matchingConjectures = [];
 
     // This takes forever..............
+    const normalizedSearchWord = searchWord?.toLowerCase?.() || "";
+    const isCleared = normalizedSearchWord.trim() === ""; // Treat "" or all-spaces as cleared
+
     querySnapshot.forEach((snapshot) => {
-      // Check if snapshot data contains searchWord as a key
       const searchData = snapshot.val();
-      if (searchData && searchData['Search Words'] && searchData['Search Words'][searchWord]) {
-        // Found searchWord key in this snapshot
-        // Add this snapshot's data to the list of matching conjectures
+      const searchWords = searchData?.['Search Words'];
+
+      if (isCleared) {
+        // If cleared or empty, show all
         matchingConjectures.push(searchData);
+      } else if (searchWords) {
+        // Case-insensitive check against searchWords keys
+        for (const word of Object.keys(searchWords)) {
+          if (word.toLowerCase() === normalizedSearchWord) {
+            matchingConjectures.push(searchData);
+            break; // stop checking more keys
+          }
+        }
       }
     });
 
@@ -780,22 +879,24 @@ export const writeToDatabaseNewSession = async (CurrId, CurrName, role) => {
   gameId = CurrName;
   userRole = role;
 
-  // Create a reference path to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}`;
+  // UPDATED: include device layer
+  const sessionRoot = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}`;
 
   // Create an object to send to the database
   // Some of these are placeholders for future values that aren't implemented yet i.e. Hints
   const promises = [
     set(ref(db, `_GameData/${gameId}/CurricularID`), CurrId),
-    set(ref(db, `${userSession}/UserId`), userId),
-    set(ref(db, `${userSession}/UserRole`), userRole),
-    set(ref(db, `${userSession}/${loginTime}/GameStart`), timestamp),
-    set(ref(db, `${userSession}/${loginTime}/GameStartGMT`), timestampGMT),
-    set(ref(db, `${userSession}/${loginTime}/DaRep`), 'null'),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintEnabled`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintCount`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/Hints/HintOrder`), "null"),
-    set(ref(db, `${userSession}/${loginTime}/LatinSquareOrder`), "null"),
+    set(ref(db, `${sessionRoot}/UserId`), userId),
+    set(ref(db, `${sessionRoot}/UserRole`), userRole),
+    set(ref(db, `${sessionRoot}/DeviceID`), deviceId),               // NEW
+    set(ref(db, `${sessionRoot}/DeviceNickname`), deviceNickname),   // NEW
+    set(ref(db, `${sessionRoot}/GameStart`), timestamp),
+    set(ref(db, `${sessionRoot}/GameStartGMT`), timestampGMT),
+    set(ref(db, `${sessionRoot}/DaRep`), 'null'),
+    set(ref(db, `${sessionRoot}/Hints/HintEnabled`), "null"),
+    set(ref(db, `${sessionRoot}/Hints/HintCount`), "null"),
+    set(ref(db, `${sessionRoot}/Hints/HintOrder`), "null"),
+    set(ref(db, `${sessionRoot}/LatinSquareOrder`), "null"),
   ];
 
   // Return the promise that push() returns
@@ -803,7 +904,7 @@ export const writeToDatabaseNewSession = async (CurrId, CurrName, role) => {
 };
 
 // Write timestamp for pose start to the database
-export const writeToDatabasePoseStart = async (poseNumber, ConjectureId) => {
+export const writeToDatabasePoseStart = async (poseNumber, ConjectureId, gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -813,8 +914,8 @@ export const writeToDatabasePoseStart = async (poseNumber, ConjectureId) => {
   eventType = poseNumber
   conjectureId = ConjectureId;
 
-  // Create a reference path to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -827,14 +928,14 @@ export const writeToDatabasePoseStart = async (poseNumber, ConjectureId) => {
 };
 
 // Writes a pose match into the database. Separated for simplicity
-export const writeToDatabasePoseMatch = async (poseNumber) => {
+export const writeToDatabasePoseMatch = async (poseNumber, gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -843,11 +944,11 @@ export const writeToDatabasePoseMatch = async (poseNumber) => {
   ];
 
   // Return the promise that push() returns
-  return promises;
+  await Promise.all(promises);
 };
 
 // Write in the start of the truefalse phase
-export const writeToDatabaseIntuitionStart = async () => {
+export const writeToDatabaseIntuitionStart = async (gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -856,8 +957,8 @@ export const writeToDatabaseIntuitionStart = async () => {
   // event type for pose data
   eventType = "Intuition";
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -870,7 +971,7 @@ export const writeToDatabaseIntuitionStart = async () => {
 };
 
 // Write in the end of the truefalse phase. 
-export const writeToDatabaseIntuitionEnd = async () => {
+export const writeToDatabaseIntuitionEnd = async (gameId) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
@@ -879,8 +980,8 @@ export const writeToDatabaseIntuitionEnd = async () => {
   // event type for pose data
   eventType = "Insight";
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -893,14 +994,14 @@ export const writeToDatabaseIntuitionEnd = async () => {
 };
 
 // Write in the second part of the true false phase
-export const writeToDatabaseInsightStart = async () => {
+export const writeToDatabaseInsightStart = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -913,14 +1014,14 @@ export const writeToDatabaseInsightStart = async () => {
 };
 
 // Write in the end of the second part of the true false phase
-export const writeToDatabaseInsightEnd = async () => {
+export const writeToDatabaseInsightEnd = async (gameId = undefined) => {
   // Create a new date object to get a timestamp
   const dateObj = new Date();
   const timestamp = dateObj.toISOString();
   const timestampGMT = dateObj.toUTCString();
 
-  // Create a reference to the Firebase Realtime Database
-  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${loginTime}/${conjectureId}`;
+  // UPDATED: include device layer
+  const userSession = `_GameData/${gameId}/${readableDate}/${userName}/${deviceSlug}/${loginTime}/${conjectureId}`;
 
   // Create an object to send to the database
   const promises = [
@@ -933,11 +1034,11 @@ export const writeToDatabaseInsightEnd = async () => {
 };
 
 // Search functionality that downloads a set of child nodes from a game based on inputted dates
-export const getFromDatabaseByGame = async (selectedGame, selectedStart, selectedEnd ) => {
+export const getFromDatabaseByGame = async (selectedGame, gameId, selectedStart, selectedEnd ) => {
   try {
     // Create reference to the realtime database
-    const posedbRef = ref(db, `_PoseData/${selectedGame}`);
-    const eventdbRef = ref(db, `_GameData/${selectedGame}`);
+    const posedbRef = ref(db, `_PoseData/${gameId}`);
+    const eventdbRef = ref(db, `_GameData/${gameId}`);
 
     // Query to find data
     const poseq = query(posedbRef, orderByKey(), startAt(selectedStart), endAt(selectedEnd));
@@ -954,13 +1055,26 @@ export const getFromDatabaseByGame = async (selectedGame, selectedStart, selecte
     if (poseQuerySnapshot.exists() && eventQuerySnapshot.exists()) {
       const poseData = poseQuerySnapshot.val();
       const eventData = eventQuerySnapshot.val();
-      //console.log('Data:', poseData);
-      
-      // // Convert event log to JSON and download
+
+      // Determine device label for filenames (single device => that slug; else MULTI_DEVICE)
+      const collectDeviceLabel = (tree) => {
+        const setD = new Set();
+        for (const day in (tree || {})) {
+          const users = tree[day] || {};
+          for (const uname in users) {
+            const devs = users[uname] || {};
+            for (const dslug in devs) setD.add(dslug);
+          }
+        }
+        return setD.size === 1 ? [...setD][0] : "MULTI_DEVICE";
+      };
+      const deviceLabel = sanitize(collectDeviceLabel(eventData));
+
+      // Convert event log to JSON and download
       const eventjsonStr = JSON.stringify(eventData, null, 2);
       const eventDownload = document.createElement('a');
       eventDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(eventjsonStr));
-      eventDownload.setAttribute('download', `${formattedGame}_event_log_${formattedStart}_to_${formattedEnd}.json`);
+      eventDownload.setAttribute('download', `${formattedGame}__${deviceLabel}__event_log_${formattedStart}_to_${formattedEnd}.json`);
       document.body.appendChild(eventDownload);
       eventDownload.click();
       document.body.removeChild(eventDownload);
@@ -969,7 +1083,7 @@ export const getFromDatabaseByGame = async (selectedGame, selectedStart, selecte
       const posejsonStr = JSON.stringify(poseData, null, 2);
       const poseDownload = document.createElement('a');
       poseDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(posejsonStr));
-      poseDownload.setAttribute('download', `${formattedGame}_pose_data_${formattedStart}_to_${formattedEnd}.json`);
+      poseDownload.setAttribute('download', `${formattedGame}__${deviceLabel}__pose_data_${formattedStart}_to_${formattedEnd}.json`);
       document.body.appendChild(poseDownload);
       poseDownload.click();
       document.body.removeChild(poseDownload);
@@ -982,38 +1096,40 @@ export const getFromDatabaseByGame = async (selectedGame, selectedStart, selecte
   }
 };
 
-export const getFromDatabaseByGameCSV = async (selectedGame, selectedStart, selectedEnd ) => {
+export const getFromDatabaseByGameCSV = async (selectedGame, gameId, selectedStart, selectedEnd) => {
   try {
-    // Create reference to the realtime database
-    const eventdbRef = ref(db, `_GameData/${selectedGame}`);
-
-    // Query to find data
+    const eventdbRef = ref(db, `_GameData/${gameId}`);
     const eventq = query(eventdbRef, orderByKey(), startAt(selectedStart), endAt(selectedEnd));
-    // Execute the query
     const eventQuerySnapshot = await get(eventq);
 
     const formattedStart = selectedStart.replace(/[^a-zA-Z0-9]/g, '_');
     const formattedEnd = selectedEnd.replace(/[^a-zA-Z0-9]/g, '_');
     const formattedGame = selectedGame.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // Check if data in snapshot exists
     if (eventQuerySnapshot.exists()) {
       const eventData = eventQuerySnapshot.val();
-      //console.log('Data:', poseData);
-      
-      // // Convert event log to JSON and download CSV
-      const eventjsonStr = JSON.stringify(eventData, null, 2);
-      const eventDownload = document.createElement('a');
-      eventDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(eventjsonStr));
-      eventDownload.setAttribute('download', `${formattedGame}_event_log_${formattedStart}_to_${formattedEnd}.json`);
-      document.body.appendChild(eventDownload);
-      eventDownload.click();
-      document.body.removeChild(eventDownload);
 
-      const result = await convertJsonToCsv(eventjsonStr, formattedGame, formattedStart, formattedEnd);
+      // Determine device label (same logic as JSON export)
+      const collectDeviceLabel = (tree) => {
+        const setD = new Set();
+        for (const day in (tree || {})) {
+          const users = tree[day] || {};
+          for (const uname in users) {
+            const devs = users[uname] || {};
+            for (const dslug in devs) setD.add(dslug);
+          }
+        }
+        return setD.size === 1 ? [...setD][0] : "MULTI_DEVICE";
+      };
+      const deviceLabel = sanitize(collectDeviceLabel(eventData));
       
+      // Convert to JSON string and let convertJsonToCsv handle the download
+      const eventjsonStr = JSON.stringify(eventData);
+      const result = await convertJsonToCsv(eventjsonStr, `${formattedGame}__${deviceLabel}`, formattedStart, formattedEnd);
+      
+      return result;
     } else {
-      return null; // This will happen if data not found
+      return null;
     }
   } catch (error) {
     throw error; 
@@ -1215,3 +1331,28 @@ export const convertDateFormat = (dateStr) => {
     return `${year}-${month}-${day}`;
 };
 
+export const findGameIdByName = async (name) => {
+  try {
+    if (!name) return null;
+    
+    const gamesRef = ref(db, 'Game');
+    const gamesSnapshot = await get(gamesRef);
+    
+    if (!gamesSnapshot.exists()) return null;
+    
+    const games = gamesSnapshot.val();
+    
+    for (const gameKey in games) {
+      const game = games[gameKey];
+      if (game.CurricularName && game.CurricularName.includes(name)) {
+        // console.log('Game found:', game.CurricularName);
+        return game.UUID;
+      }
+    }
+  
+    return null;
+  } catch (error) {
+    console.error('Error finding gameId by name:', error);
+    return null;
+  }
+};

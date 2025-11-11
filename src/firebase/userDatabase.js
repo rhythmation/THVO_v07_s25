@@ -63,6 +63,7 @@ export const writeNewUserToDatabase = async (userEmail, userRole) => {
     .catch((error) => {
         console.error("Error creating auth user", error);
         // Handle errors (e.g., invalid email, weak password)
+        console.error("Auth create failed:", error.code, error.message);   
         alert("Error Creating the User")
     });
 
@@ -84,7 +85,7 @@ export const writeCurrentUserToDatabaseNewUser = async (newID,newEmail,newRole, 
     const userRole = newRole;
     console.log(`User Role: ${userRole}`)
 
-    const userOrg = newOrg
+    const userOrg = newOrg ?? ""
     console.log(`User Org: ${userOrg}`)
 
    // Extract username from email
@@ -190,7 +191,7 @@ export const getUserNameFromDatabase = async (props) => {
             const currentUser = auth.currentUser;
 
             // make this user a dev - they were probably created directly in firebase.
-            await writeCurrentUserToDatabaseNewUser(currentUser.id,currentUser.email,UserPermissions.Developer)
+            await writeCurrentUserToDatabaseNewUser(currentUser.uid,currentUser.email,UserPermissions.Developer)
 
         }catch(error){
             console.log("User not found")

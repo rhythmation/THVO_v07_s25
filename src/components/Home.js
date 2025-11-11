@@ -4,45 +4,8 @@ import { Text } from "@inlet/react-pixi";
 import { TextStyle } from "@pixi/text";
 import { yellow, blue, green, white, red,turquoise } from "../utils/colors";
 
-import React, { useState, useEffect } from 'react';
-import { writeToDatabaseNewUser, getUserRoleFromDatabase, getUserNameFromDatabase } from "../firebase/userDatabase";
-import UserManagementModule from '../components/AdminHomeModule/UserManagementModule';
-import { onAuthStateChanged } from "firebase/auth";
-
-
-
 const Home = (props) => {
-  const { height, width, startCallback, editCallback, poseCallback, conjectureCallback, logoutCallback, testCallback, curricularCallback,UserManagementCallback } = props;
-  const [userName, setUserName] = useState('Loading...');
-
-  useEffect(() => {
-    
-    const fetchData = async () => {
-      try {
-        console.log('Fetching user name...');
-        const name = await getUserNameFromDatabase();
-        console.log('Fetched user name:', name);
-  
-        if (name !== null && name !== "USER NOT FOUND") {
-          setUserName(name);
-          console.log('User found. Set user name.');
-        } else if (name === "USER NOT FOUND") {
-          console.log('User not found. Stop trying but we will continue.');
-          fetchData();  // Retry the fetch
-        } else {
-          console.log('User name is null. Retrying...');
-          fetchData();  // Retry the fetch
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    setTimeout(() => {
-      
-      fetchData();//wait 5 seconds and then proceed
-    }, 5000);
-    
-  }, [onAuthStateChanged]);
+  const { height, width, userName, startCallback, logoutCallback } = props;
 
   return (
     <>
